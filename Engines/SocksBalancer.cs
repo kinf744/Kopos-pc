@@ -106,7 +106,7 @@ namespace KighmuVpnWindows.Engines
                 if (h.Count > 0)
                 {
                     _healthyPorts = h;
-                    KighmuLogger.Warning(TAG, $"Port {port} retire echecs={fails} healthy=[{string.Join(\",\", h)}]");
+                    KighmuLogger.Warning(TAG, $"Port {port} retire echecs={fails} healthy=[{string.Join(",", h)}]");
                 }
             }
         }

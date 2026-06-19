@@ -195,7 +195,8 @@ namespace KighmuVpnWindows.Engines
                 string fp  = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint;
                 string sid = string.IsNullOrWhiteSpace(_profile.ShortId)     ? "0000000000000000" : _profile.ShortId;
                 string sn  = string.IsNullOrWhiteSpace(_profile.Sni)         ? _profile.ServerAddress : _profile.Sni;
-                return $"\"security\":\"reality\",\"realitySettings\":{{\"serverName\":\"{sn}\",\"fingerprint\":\"{fp}\",\"publicKey\":\"{_profile.PublicKey}\",\"shortId\":\"{sid}\"}}";\n            }
+                return $"\"security\":\"reality\",\"realitySettings\":{{\"serverName\":\"{sn}\",\"fingerprint\":\"{fp}\",\"publicKey\":\"{_profile.PublicKey}\",\"shortId\":\"{sid}\"}}";
+            }
             else
             {
                 // TLS standard
@@ -229,7 +230,7 @@ namespace KighmuVpnWindows.Engines
                 "h2" or "http"            => $"{{\"network\":\"h2\",\"httpSettings\":{{\"path\":\"{p}\",\"host\":[\"{ h}\"]}}}}",
                 "httpupgrade"             => $"{{\"network\":\"httpupgrade\",\"httpupgradeSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\"}}}}",
                 "kcp" or "mkcp"           => $"{{\"network\":\"kcp\",\"kcpSettings\":{{\"mtu\":1350,\"tti\":20,\"uplinkCapacity\":5,\"downlinkCapacity\":20,\"congestion\":false,\"readBufferSize\":2,\"writeBufferSize\":2,\"header\":{{\"type\":\"none\"}}}}}}",
-                _                         => ""network":"tcp","tcpSettings":{}"
+                _                         => "{\"network\":\"tcp\",\"tcpSettings\":{}}"
             };
 
             return !string.IsNullOrWhiteSpace(tlsPart)
