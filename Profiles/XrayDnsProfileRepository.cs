@@ -1,20 +1,41 @@
-using KighmuVpnWindows.Config;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace KighmuVpnWindows.Profiles
 {
-    /// <summary>Équivalent exact de XrayDnsProfileRepository.kt</summary>
+    /// <summary>Equivalent exact de XrayDnsProfileRepository.kt</summary>
     public class XrayDnsProfileRepository
     {
-        private readonly LocalStorage _prefs = new LocalStorage("xraydns_profiles");
-        private const string KEY = "profiles_json";
+        private readonly string _filePath;
+        private const string FileName = "xraydns_profiles.json";
 
-        public List<XrayDnsProfile> GetAll() => XrayDnsProfile.ListFromJson(_prefs.GetString(KEY, "[]"));
+        public XrayDnsProfileRepository()
+        {
+            string dir = LocalStorage.GetAppDataDir();
+            _filePath = Path.Combine(dir, FileName);
+        }
 
-        public void Save(List<XrayDnsProfile> profiles) =>
-            _prefs.SetString(KEY, XrayDnsProfile.ListToJson(profiles));
+        public List<XrayDnsProfile> GetAll()
+        {
+            if (!File.Exists(_filePath)) return new List<XrayDnsProfile>();
+            try
+            {
+                string json = File.ReadAllText(_filePath);
+                return JsonConvert.DeserializeObject<List<XrayDnsProfile>>(json)
+                       ?? new List<XrayDnsProfile>();
+            }
+            catch { return new List<XrayDnsProfile>(); }
+        }
+
+        public void Save(List<XrayDnsProfile> profiles)
+        {
+            string dir = Path.GetDirectoryName(_filePath)!;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            File.WriteAllText(_filePath, JsonConvert.SerializeObject(profiles, Formatting.Indented));
+        }
 
         public void Add(XrayDnsProfile profile)
         {
@@ -30,23 +51,47 @@ namespace KighmuVpnWindows.Profiles
             if (idx >= 0) { list[idx] = profile; Save(list); }
         }
 
-        public void Delete(string id) =>
-            Save(GetAll().Where(p => p.Id != id).ToList());
+        public void Delete(string id)
+        {
+            var list = GetAll().Where(p => p.Id != id).ToList();
+            Save(list);
+        }
 
         public void Clone(string id)
         {
             var list = GetAll();
             var original = list.FirstOrDefault(p => p.Id == id);
             if (original == null) return;
-
-            var cloned = XrayDnsProfile.FromJson(original.ToJson());
-            cloned.Id = Guid.NewGuid().ToString();
-            cloned.ProfileName = $"{original.ProfileName} (copy)";
+            var cloned = new XrayDnsProfile
+            {
+                Id            = Guid.NewGuid().ToString(),
+                ProfileName   = original.ProfileName + " (copy)",
+                XrayLink      = original.XrayLink,
+                XrayJsonConfig= original.XrayJsonConfig,
+                Protocol      = original.Protocol,
+                ServerAddress = original.ServerAddress,
+                ServerPort    = original.ServerPort,
+                Uuid          = original.Uuid,
+                Encryption    = original.Encryption,
+                Transport     = original.Transport,
+                WsPath        = original.WsPath,
+                WsHost        = original.WsHost,
+                Tls           = original.Tls,
+                Sni           = original.Sni,
+                AllowInsecure = original.AllowInsecure,
+                DnsServer     = original.DnsServer,
+                DnsPort       = original.DnsPort,
+                Nameserver    = original.Nameserver,
+                PublicKey     = original.PublicKey,
+                TunnelCount   = original.TunnelCount,
+                IsSelected    = false
+            };
             list.Add(cloned);
             Save(list);
         }
 
-        public List<XrayDnsProfile> GetSelected() => GetAll().Where(p => p.IsSelected).ToList();
+        public List<XrayDnsProfile> GetSelected() =>
+            GetAll().Where(p => p.IsSelected).ToList();
 
         public void UpdateSelection(string id, bool selected)
         {
