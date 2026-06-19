@@ -92,7 +92,8 @@ namespace KighmuVpnWindows.Engines
                     sshPass      : p0.SshPass,
                     profileIndex : 0);
 
-            return new MultiHttpProxyEngine(profiles);
+            // MultiHttpProxyEngine charge ses profils lui-meme via HttpProxyProfileRepository
+            return new MultiHttpProxyEngine();
         }
 
         // ── SSH SSL/TLS ──────────────────────────────────────────────────────
