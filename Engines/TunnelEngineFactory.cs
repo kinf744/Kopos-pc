@@ -1,5 +1,4 @@
 using KighmuVpnWindows.Config;
-using KighmuVpnWindows.Engines;
 using KighmuVpnWindows.Models;
 using KighmuVpnWindows.Profiles;
 using KighmuVpnWindows.Utils;
@@ -8,17 +7,11 @@ using System.Linq;
 
 namespace KighmuVpnWindows.Engines
 {
-    /// <summary>
-    /// Equivalent de TunnelEngineFactory.kt.
-    /// Lit le mode actif depuis LocalStorage et instancie le bon ITunnelEngine.
-    /// </summary>
     public static class TunnelEngineFactory
     {
-        private const string TAG = "TunnelEngineFactory";
+        private const string TAG        = "TunnelEngineFactory";
         private const string PREFS_NAME = "tunnel_prefs";
         private const string KEY_MODE   = "active_tunnel_mode";
-
-        // ── Lecture / Ecriture du mode actif ────────────────────────────────
 
         public static TunnelMode GetActiveMode()
         {
@@ -34,17 +27,10 @@ namespace KighmuVpnWindows.Engines
             KighmuLogger.Info(TAG, $"Mode actif -> {mode.Label()}");
         }
 
-        // ── Factory principale ───────────────────────────────────────────────
-
-        /// <summary>
-        /// Cree l'engine correspondant au mode actif.
-        /// Equivalent exact de TunnelEngineFactory.kt::create().
-        /// </summary>
         public static ITunnelEngine Create()
         {
             var mode = GetActiveMode();
             KighmuLogger.Info(TAG, $"Creation engine pour mode: {mode.Label()}");
-
             return mode switch
             {
                 TunnelMode.SLOW_DNS      => CreateSlowDns(),
@@ -57,8 +43,7 @@ namespace KighmuVpnWindows.Engines
             };
         }
 
-        // ── Createurs par mode ───────────────────────────────────────────────
-
+        // ── SlowDNS ──────────────────────────────────────────────────────────
         private static ITunnelEngine CreateSlowDns()
         {
             var repo     = new SlowDnsProfileRepository();
@@ -70,19 +55,20 @@ namespace KighmuVpnWindows.Engines
 
             KighmuLogger.Info(TAG, $"SlowDNS: {profiles.Count} profil(s)");
 
-            return profiles.Count == 1
-                ? (ITunnelEngine)new SlowDnsEngine(
-                    new KighmuVpnWindows.Models.SlowDnsConfig {
-                        DnsServer  = profiles[0].DnsServer,
-                        Nameserver = profiles[0].Nameserver,
-                        PublicKey  = profiles[0].PublicKey
-                    },
-                    profiles[0].SshUser,
-                    profiles[0].SshPass,
-                    0)
-                : new MultiSlowDnsEngine(profiles);
+            var p0 = profiles[0];
+            var cfg = new SlowDnsConfig {
+                DnsServer  = p0.DnsServer,
+                Nameserver = p0.Nameserver,
+                PublicKey  = p0.PublicKey
+            };
+
+            if (profiles.Count == 1)
+                return new SlowDnsEngine(cfg, p0.SshUser, p0.SshPass, 0);
+
+            return new MultiSlowDnsEngine(cfg, p0.SshUser, p0.SshPass);
         }
 
+        // ── HTTP Proxy ───────────────────────────────────────────────────────
         private static ITunnelEngine CreateHttpProxy()
         {
             var repo     = new HttpProxyProfileRepository();
@@ -94,43 +80,52 @@ namespace KighmuVpnWindows.Engines
 
             KighmuLogger.Info(TAG, $"HttpProxy: {profiles.Count} profil(s)");
 
-            return profiles.Count == 1
-                ? (ITunnelEngine)new HttpProxyEngine(
-                    proxyHost    : profiles[0].ProxyHost,
-                    proxyPort    : profiles[0].ProxyPort,
-                    customPayload: profiles[0].CustomPayload,
-                    sshHost      : profiles[0].SshHost,
-                    sshPort      : profiles[0].SshPort,
-                    sshUser      : profiles[0].SshUser,
-                    sshPass      : profiles[0].SshPass,
-                    profileIndex : 0)
-                : new MultiHttpProxyEngine(profiles);
+            var p0 = profiles[0];
+            if (profiles.Count == 1)
+                return new HttpProxyEngine(
+                    proxyHost    : p0.ProxyHost,
+                    proxyPort    : p0.ProxyPort,
+                    customPayload: p0.CustomPayload,
+                    sshHost      : p0.SshHost,
+                    sshPort      : p0.SshPort,
+                    sshUser      : p0.SshUser,
+                    sshPass      : p0.SshPass,
+                    profileIndex : 0);
+
+            return new MultiHttpProxyEngine(profiles);
         }
 
+        // ── SSH SSL/TLS ──────────────────────────────────────────────────────
         private static ITunnelEngine CreateSshSsl()
         {
-            var repo     = new SlowDnsProfileRepository();   // SSH SSL reutilise SlowDnsProfile (champs SSH)
-            var selected = repo.GetSelected();
-            var profile  = selected.FirstOrDefault()
-                        ?? repo.GetAll().FirstOrDefault()
-                        ?? throw new InvalidOperationException("Aucun profil SSH SSL/TLS configure.");
+            var repo    = new SlowDnsProfileRepository();
+            var profile = repo.GetSelected().FirstOrDefault()
+                       ?? repo.GetAll().FirstOrDefault()
+                       ?? throw new InvalidOperationException("Aucun profil SSH SSL/TLS configure.");
 
             KighmuLogger.Info(TAG, $"SshSsl: {profile.ProfileName}");
-            return new SshSslEngine(profile);
+            return new SshSslEngine(new SshSslConfig {
+                SshHost = profile.SshHost,
+                SshPort = profile.SshPort,
+                SshUser = profile.SshUser,
+                SshPass = profile.SshPass,
+                Sni     = profile.ProxyHost
+            });
         }
 
+        // ── V2Ray/Xray ───────────────────────────────────────────────────────
         private static ITunnelEngine CreateXrayVpn()
         {
-            var repo     = new XrayVpnProfileRepository();
-            var selected = repo.GetSelected();
-            var profile  = selected.FirstOrDefault()
-                        ?? repo.GetAll().FirstOrDefault()
-                        ?? throw new InvalidOperationException("Aucun profil V2Ray/Xray configure.");
+            var repo    = new XrayVpnProfileRepository();
+            var profile = repo.GetSelected().FirstOrDefault()
+                       ?? repo.GetAll().FirstOrDefault()
+                       ?? throw new InvalidOperationException("Aucun profil V2Ray/Xray configure.");
 
             KighmuLogger.Info(TAG, $"XrayVpn: {profile.ProfileName}");
             return new XrayVpnEngine(profile, instanceId: 0);
         }
 
+        // ── V2Ray + SlowDNS ──────────────────────────────────────────────────
         private static ITunnelEngine CreateXrayDns()
         {
             var repo     = new XrayDnsProfileRepository();
@@ -142,11 +137,14 @@ namespace KighmuVpnWindows.Engines
 
             KighmuLogger.Info(TAG, $"XrayDns: {profiles.Count} profil(s)");
 
-            return profiles.Count == 1
-                ? (ITunnelEngine)new XrayDnsEngine(profiles[0])
-                : new MultiXrayDnsEngine(profiles.Cast<KighmuVpnWindows.Profiles.XrayDnsProfile>().ToList());
+            if (profiles.Count == 1)
+                return new XrayDnsEngine(profiles[0]);
+
+            // MultiXrayDnsEngine charge ses profils lui-meme via XrayDnsProfileRepository
+            return new MultiXrayDnsEngine();
         }
 
+        // ── Hysteria UDP ─────────────────────────────────────────────────────
         private static ITunnelEngine CreateHysteria()
         {
             var repo     = new HysteriaProfileRepository();
@@ -158,18 +156,26 @@ namespace KighmuVpnWindows.Engines
 
             KighmuLogger.Info(TAG, $"Hysteria: {profiles.Count} profil(s)");
 
-            if (profiles.Count == 1) {
-                var p = profiles[0];
-                return new HysteriaEngine(new KighmuVpnWindows.Models.HysteriaConfig {
-                    ServerAddress = p.ServerAddress,
-                    ServerPort    = p.ServerPort,
-                    AuthPassword  = p.AuthPassword,
-                    Sni           = p.Sni,
-                    Obfs          = p.Obfs,
-                    ObfsPassword  = p.ObfsPassword
+            var p0 = profiles[0];
+            if (profiles.Count == 1)
+                return new HysteriaEngine(new HysteriaConfig {
+                    ServerAddress = p0.ServerAddress,
+                    ServerPort    = p0.ServerPort,
+                    AuthPassword  = p0.AuthPassword,
+                    Sni           = p0.Sni,
+                    Obfs          = p0.Obfs,
+                    ObfsPassword  = p0.ObfsPassword
                 });
-            }
-            return new MultiHysteriaEngine(profiles);
+
+            // MultiHysteriaEngine charge ses profils lui-meme, on passe la config du 1er comme fallback
+            return new MultiHysteriaEngine(new HysteriaConfig {
+                ServerAddress = p0.ServerAddress,
+                ServerPort    = p0.ServerPort,
+                AuthPassword  = p0.AuthPassword,
+                Sni           = p0.Sni,
+                Obfs          = p0.Obfs,
+                ObfsPassword  = p0.ObfsPassword
+            });
         }
     }
 }

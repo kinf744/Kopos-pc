@@ -45,6 +45,15 @@ namespace KighmuVpnWindows.Config
             File.WriteAllText(_filePath, JsonConvert.SerializeObject(_data));
         }
 
+        public static string GetAppDataDir()
+        {
+            string dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "KighmuVPN", "Data");
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
         public string GetString(string key, string defaultValue) =>
             _data.TryGetValue(key, out var value) ? value : defaultValue;
 
