@@ -1,0 +1,82 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+
+    <!-- ===== Card (équivalent Widget.KighmuVPN.Card) ===== -->
+    <Style x:Key="KighmuCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceDarkBrush}" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.4" Color="Black" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== Bouton standard (équivalent Widget.KighmuVPN.Button) ===== -->
+    <Style x:Key="KighmuButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+        <Setter Property="Background" Value="{StaticResource AccentBlueBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="8" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
+    <!-- ===== Bouton Connect (équivalent Widget.KighmuVPN.Button.Connect) - FAB style ===== -->
+    <Style x:Key="KighmuConnectButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignFloatingActionButton}">
+        <Setter Property="Background" Value="{StaticResource AccentBlueBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Width" Value="120" />
+        <Setter Property="Height" Value="120" />
+        <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="60" />
+    </Style>
+
+    <!-- ===== Champs de saisie (équivalent Widget.KighmuVPN.TextInputLayout) ===== -->
+    <Style x:Key="KighmuTextBox" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+        <Setter Property="materialDesign:TextFieldAssist.UnderlineBrush" Value="{StaticResource AccentBlueBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBlueBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="materialDesign:HintAssist.Foreground" Value="{StaticResource TextHintBrush}" />
+    </Style>
+
+    <!-- ===== Spinner / ComboBox (équivalent Widget.KighmuVPN.Spinner) ===== -->
+    <Style x:Key="KighmuComboBox" TargetType="ComboBox" BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Background" Value="{StaticResource SurfaceDarkElevatedBrush}" />
+        <Setter Property="Padding" Value="12,6" />
+    </Style>
+
+    <!-- ===== Texte de logs (équivalent Widget.KighmuVPN.LogText) ===== -->
+    <Style x:Key="KighmuLogText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Consolas" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="LineHeight" Value="16" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- ===== Section header (équivalent Widget.KighmuVPN.SectionHeader) ===== -->
+    <Style x:Key="KighmuSectionHeader" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource AccentBlueBrush}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
+        <Setter Property="Margin" Value="0,12,0,4" />
+    </Style>
+
+    <!-- ===== Texte secondaire ===== -->
+    <Style x:Key="KighmuSecondaryText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <!-- ===== Style de fenêtre globale ===== -->
+    <Style x:Key="KighmuWindow" TargetType="Window">
+        <Setter Property="Background" Value="{StaticResource BackgroundDarkBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+    </Style>
+
+</ResourceDictionary>
