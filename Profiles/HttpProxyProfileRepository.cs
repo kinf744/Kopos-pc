@@ -1,3 +1,4 @@
+using KighmuVpnWindows.Config;
 using KighmuVpnWindows.Utils;
 using Newtonsoft.Json;
 using System.Collections.Generic;

@@ -23,6 +23,7 @@ namespace KighmuVpnWindows.Utils
         public static void Info(string tag, string message) => Write("INFO", tag, message);
         public static void Error(string tag, string message) => Write("ERROR", tag, message);
         public static void Warning(string tag, string message) => Write("WARN", tag, message);
+        public static void Warn(string tag, string message) => Write("WARN", tag, message); // alias
 
         private static void Write(string level, string tag, string message)
         {

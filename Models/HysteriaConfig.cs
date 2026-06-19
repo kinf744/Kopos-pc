@@ -6,6 +6,9 @@ namespace KighmuVpnWindows.Models
     public class HysteriaConfig
     {
         [JsonProperty("serverAddress")] public string ServerAddress { get; set; } = "";
+        [JsonProperty("serverPort")]    public int    ServerPort    { get; set; } = 36712;
+        [JsonProperty("sni")]           public string Sni           { get; set; } = "";
+        [JsonProperty("obfs")]          public string Obfs          { get; set; } = "";
         [JsonProperty("authPassword")] public string AuthPassword { get; set; } = "";
         [JsonProperty("uploadMbps")] public int UploadMbps { get; set; } = 10;
         [JsonProperty("downloadMbps")] public int DownloadMbps { get; set; } = 50;

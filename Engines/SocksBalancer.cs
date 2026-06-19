@@ -18,6 +18,7 @@ namespace KighmuVpnWindows.Engines
     {
         private const string TAG = "SocksBalancer";
         public static int BalancerPort = 10900;
+        public const int BALANCER_PORT = 10900; // alias pour compatibilite
         private const int PIPE_BUFFER_SIZE = 131072;
 
         private TcpListener? _serverSocket;

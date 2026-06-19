@@ -24,7 +24,7 @@ namespace KighmuVpnWindows.Engines
         {
             var prefs = new LocalStorage(PREFS_NAME);
             int id    = int.TryParse(prefs.GetString(KEY_MODE, "1"), out var v) ? v : 1;
-            return TunnelMode.FromId(id);
+            return TunnelModeExtensions.FromId(id);
         }
 
         public static void SetActiveMode(TunnelMode mode)
@@ -71,7 +71,15 @@ namespace KighmuVpnWindows.Engines
             KighmuLogger.Info(TAG, $"SlowDNS: {profiles.Count} profil(s)");
 
             return profiles.Count == 1
-                ? (ITunnelEngine)new SlowDnsEngine(profiles[0])
+                ? (ITunnelEngine)new SlowDnsEngine(
+                    new KighmuVpnWindows.Models.SlowDnsConfig {
+                        DnsServer  = profiles[0].DnsServer,
+                        Nameserver = profiles[0].Nameserver,
+                        PublicKey  = profiles[0].PublicKey
+                    },
+                    profiles[0].SshUser,
+                    profiles[0].SshPass,
+                    0)
                 : new MultiSlowDnsEngine(profiles);
         }
 
@@ -87,7 +95,15 @@ namespace KighmuVpnWindows.Engines
             KighmuLogger.Info(TAG, $"HttpProxy: {profiles.Count} profil(s)");
 
             return profiles.Count == 1
-                ? (ITunnelEngine)new HttpProxyEngine(profiles[0])
+                ? (ITunnelEngine)new HttpProxyEngine(
+                    proxyHost    : profiles[0].ProxyHost,
+                    proxyPort    : profiles[0].ProxyPort,
+                    customPayload: profiles[0].CustomPayload,
+                    sshHost      : profiles[0].SshHost,
+                    sshPort      : profiles[0].SshPort,
+                    sshUser      : profiles[0].SshUser,
+                    sshPass      : profiles[0].SshPass,
+                    profileIndex : 0)
                 : new MultiHttpProxyEngine(profiles);
         }
 
@@ -128,7 +144,7 @@ namespace KighmuVpnWindows.Engines
 
             return profiles.Count == 1
                 ? (ITunnelEngine)new XrayDnsEngine(profiles[0])
-                : new MultiXrayDnsEngine(profiles);
+                : new MultiXrayDnsEngine(profiles.Cast<KighmuVpnWindows.Profiles.XrayDnsProfile>().ToList());
         }
 
         private static ITunnelEngine CreateHysteria()
@@ -142,9 +158,18 @@ namespace KighmuVpnWindows.Engines
 
             KighmuLogger.Info(TAG, $"Hysteria: {profiles.Count} profil(s)");
 
-            return profiles.Count == 1
-                ? (ITunnelEngine)new HysteriaEngine(profiles[0])
-                : new MultiHysteriaEngine(profiles);
+            if (profiles.Count == 1) {
+                var p = profiles[0];
+                return new HysteriaEngine(new KighmuVpnWindows.Models.HysteriaConfig {
+                    ServerAddress = p.ServerAddress,
+                    ServerPort    = p.ServerPort,
+                    AuthPassword  = p.AuthPassword,
+                    Sni           = p.Sni,
+                    Obfs          = p.Obfs,
+                    ObfsPassword  = p.ObfsPassword
+                });
+            }
+            return new MultiHysteriaEngine(profiles);
         }
     }
 }
