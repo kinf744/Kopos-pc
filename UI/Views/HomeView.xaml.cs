@@ -14,12 +14,37 @@ namespace KighmuVpnWindows.UI.Views
         public HomeView()
         {
             InitializeComponent();
-            // Abonnement aux evenements du service
-            _vpnService.StatusChanged  += OnStatusChanged;
-            _vpnService.ErrorOccurred  += OnError;
-            // Afficher l'etat courant au chargement
+            _vpnService.StatusChanged += OnStatusChanged;
+            _vpnService.ErrorOccurred += OnError;
+            PopulateProfileSelector();
             UpdateUI(_vpnService.Status);
         }
+
+        // ── Selecteur de profil ───────────────────────────────────────────────
+
+        private void PopulateProfileSelector()
+        {
+            ProfileSelector.Items.Clear();
+            foreach (TunnelMode mode in Enum.GetValues(typeof(TunnelMode)))
+            {
+                var item = new ComboBoxItem { Content = mode.Label(), Tag = mode };
+                ProfileSelector.Items.Add(item);
+                if (mode == _vpnService.ActiveMode)
+                    ProfileSelector.SelectedItem = item;
+            }
+            ProfileSelector.SelectionChanged += ProfileSelector_SelectionChanged;
+        }
+
+        private async void ProfileSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ProfileSelector.SelectedItem is ComboBoxItem item && item.Tag is TunnelMode mode)
+            {
+                await _vpnService.SetMode(mode);
+                UpdateUI(_vpnService.Status);
+            }
+        }
+
+        // ── Bouton Connect ────────────────────────────────────────────────────
 
         private async void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
@@ -34,9 +59,10 @@ namespace KighmuVpnWindows.UI.Views
             }
         }
 
+        // ── Evenements service ────────────────────────────────────────────────
+
         private void OnStatusChanged(ConnectionStatus status)
         {
-            // Retour sur le thread UI
             Dispatcher.Invoke(() => UpdateUI(status));
         }
 
@@ -45,61 +71,63 @@ namespace KighmuVpnWindows.UI.Views
             Dispatcher.Invoke(() =>
             {
                 StatusDetailText.Text = $"Erreur : {message}";
-                MessageBox.Show(message, "Erreur tunnel", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(message, "Erreur tunnel",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             });
         }
 
+        // ── Mise a jour UI ────────────────────────────────────────────────────
+
         private void UpdateUI(ConnectionStatus status)
         {
-            var green = (Brush)FindResource("AccentGreenBrush");
-            var grey  = (Brush)FindResource("TextSecondaryBrush");
-            var red   = (Brush)TryFindResource("AccentRedBrush") ?? Brushes.Red;
+            var green  = (Brush)FindResource("AccentGreenBrush");
+            var grey   = (Brush)FindResource("TextSecondaryBrush");
+            var orange = (Brush)TryFindResource("AccentOrangeBrush") ?? Brushes.Orange;
+            var red    = (Brush)TryFindResource("AccentRedBrush")    ?? Brushes.Red;
+
+            string modeLabel = _vpnService.ActiveMode.Label();
 
             switch (status)
             {
                 case ConnectionStatus.CONNECTED:
-                    StatusText.Text        = "CONNECTE";
-                    StatusText.Foreground  = green;
-                    StatusDetailText.Text  = $"Tunnel actif — {_vpnService.ActiveMode.Label()}";
-                    ConnectButton.Content  = "DISCONNECT";
+                    StatusText.Text         = "CONNECTE";
+                    StatusText.Foreground   = green;
+                    StatusDetailText.Text   = $"Tunnel actif — {modeLabel}";
+                    ConnectButton.Content   = "DISCONNECT";
                     ConnectButton.IsEnabled = true;
                     break;
 
                 case ConnectionStatus.CONNECTING:
-                    StatusText.Text        = "CONNEXION...";
-                    StatusText.Foreground  = grey;
-                    StatusDetailText.Text  = "Demarrage du tunnel...";
-                    ConnectButton.Content  = "ANNULER";
+                    StatusText.Text         = "CONNEXION...";
+                    StatusText.Foreground   = orange;
+                    StatusDetailText.Text   = $"Demarrage {modeLabel}...";
+                    ConnectButton.Content   = "ANNULER";
                     ConnectButton.IsEnabled = true;
                     break;
 
                 case ConnectionStatus.STOPPING:
-                    StatusText.Text        = "ARRET...";
-                    StatusText.Foreground  = grey;
-                    StatusDetailText.Text  = "Arret du tunnel...";
+                    StatusText.Text         = "ARRET...";
+                    StatusText.Foreground   = grey;
+                    StatusDetailText.Text   = "Arret du tunnel...";
                     ConnectButton.IsEnabled = false;
                     break;
 
                 case ConnectionStatus.ERROR:
-                    StatusText.Text        = "ERREUR";
-                    StatusText.Foreground  = red;
-                    StatusDetailText.Text  = "Echec de connexion";
-                    ConnectButton.Content  = "REESSAYER";
+                    StatusText.Text         = "ERREUR";
+                    StatusText.Foreground   = red;
+                    StatusDetailText.Text   = "Echec — verifiez la config";
+                    ConnectButton.Content   = "REESSAYER";
                     ConnectButton.IsEnabled = true;
                     break;
 
-                default: // DISCONNECTED
-                    StatusText.Text        = "DECONNECTE";
-                    StatusText.Foreground  = grey;
-                    StatusDetailText.Text  = "Appuyez pour vous connecter";
-                    ConnectButton.Content  = "CONNECT";
+                default:
+                    StatusText.Text         = "DECONNECTE";
+                    StatusText.Foreground   = grey;
+                    StatusDetailText.Text   = "Appuyez pour vous connecter";
+                    ConnectButton.Content   = "CONNECT";
                     ConnectButton.IsEnabled = true;
                     break;
             }
-
-            // Afficher le mode actif dans le label du bas
-            if (ModeLabel != null)
-                ModeLabel.Text = _vpnService.ActiveMode.Label();
         }
     }
 }
