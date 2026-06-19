@@ -1,0 +1,27 @@
+<UserControl x:Class="KighmuVpnWindows.UI.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundDarkBrush}">
+    <StackPanel Margin="20">
+        <TextBlock Text="Réglages" FontSize="18" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16" />
+
+        <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="GÉNÉRAL" Style="{StaticResource KighmuSectionHeader}" />
+                <CheckBox x:Name="AutoStartCheck" Content="Démarrer avec Windows"
+                          Foreground="{StaticResource TextPrimaryBrush}" Margin="0,8,0,4" />
+                <CheckBox x:Name="MinimizeToTrayCheck" Content="Réduire dans la barre des tâches"
+                          Foreground="{StaticResource TextPrimaryBrush}" Margin="0,4,0,4" />
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource KighmuCard}">
+            <StackPanel>
+                <TextBlock Text="À PROPOS" Style="{StaticResource KighmuSectionHeader}" />
+                <TextBlock Text="KIGHMU VPN pour Windows - v1.0.0"
+                           Style="{StaticResource KighmuSecondaryText}" Margin="0,4,0,0" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

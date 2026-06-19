@@ -1,0 +1,21 @@
+<UserControl x:Class="KighmuVpnWindows.UI.Views.LogsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundDarkBrush}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Logs" FontSize="18" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12" />
+
+        <Border Grid.Row="1" Style="{StaticResource KighmuCard}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="LogOutput" Style="{StaticResource KighmuLogText}"
+                           Text="En attente de connexion..." />
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>
