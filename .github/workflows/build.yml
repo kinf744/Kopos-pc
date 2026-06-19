@@ -1,0 +1,78 @@
+name: Build Kopos-pc (Windows)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore NuGet packages
+        run: dotnet restore KighmuVpnWindows.csproj
+
+      - name: Download native binaries (bin/win/)
+        shell: bash
+        run: |
+          mkdir -p bin/win
+
+          # xray.exe (Xray-core Windows x64)
+          curl -L -o xray_win.zip "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-windows-64.zip"
+          unzip -o xray_win.zip xray.exe -d bin/win/
+          rm xray_win.zip
+
+          # tun2socks.exe (hev-socks5-tunnel or tun2socks Windows)
+          curl -L -o tun2socks.exe "https://github.com/xjasonlyu/tun2socks/releases/latest/download/tun2socks-windows-amd64.exe"
+          mv tun2socks.exe bin/win/tun2socks.exe
+
+          # dnstt-client.exe (SlowDNS/dnstt Windows)
+          curl -L -o dnstt_win.zip "https://github.com/kinf744/kighmu-vpn/releases/download/binaries/dnstt-windows-amd64.zip" || true
+          [ -f dnstt_win.zip ] && unzip -o dnstt_win.zip -d bin/win/ && rm dnstt_win.zip || echo "dnstt: a telecharger manuellement"
+
+          # hysteria.exe (Hysteria v1 Windows)
+          curl -L -o bin/win/hysteria.exe "https://github.com/apernet/hysteria/releases/latest/download/hysteria-windows-amd64.exe" || echo "hysteria: a telecharger manuellement"
+
+          # wintun.dll (driver TUN Windows)
+          curl -L -o wintun.zip "https://www.wintun.net/builds/wintun-0.14.1.zip"
+          unzip -o wintun.zip "wintun/bin/amd64/wintun.dll" -d wintun_tmp/
+          mv wintun_tmp/wintun/bin/amd64/wintun.dll bin/win/wintun.dll
+          rm -rf wintun.zip wintun_tmp/
+
+          echo "=== Contenu bin/win/ ==="
+          ls -lh bin/win/
+
+      - name: Build (Release)
+        run: dotnet publish KighmuVpnWindows.csproj -c Release -r win-x64 --self-contained false -o publish/
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KighmuVPN-Windows
+          path: publish/
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "KighmuVPN Windows — Build ${{ github.run_number }}"
+          files: |
+            publish/KighmuVPN.exe
+          body: |
+            Build automatique depuis le commit ${{ github.sha }}
+            Mode: Release | Plateforme: Windows x64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
