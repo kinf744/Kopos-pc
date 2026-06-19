@@ -187,7 +187,14 @@ namespace KighmuVpnWindows.Engines
         /// vers le SOCKS5 local (127.0.0.1:_socksPort).
         /// Remplace HevTun2Socks (lib native Android) par un process séparé.
         /// </summary>
-        public void StartTun2Socks(string tunAdapterName)
+        public void StartTun2Socks(string tunAdapterName) => StartTun2SocksOnPort(tunAdapterName, _socksPort);
+
+        /// <summary>
+        /// Variante permettant de forcer un port cible précis (utilisé par
+        /// MultiHysteriaEngine pour pointer vers le port du SocksBalancer
+        /// plutôt que le port direct de cet engine).
+        /// </summary>
+        public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
             try
             {
@@ -198,12 +205,12 @@ namespace KighmuVpnWindows.Engines
                     return;
                 }
 
-                KighmuLogger.Info(TAG, $"Démarrage tun2socks adapter={tunAdapterName} port={_socksPort}");
+                KighmuLogger.Info(TAG, $"Démarrage tun2socks adapter={tunAdapterName} port={targetPort}");
 
                 var psi = new ProcessStartInfo
                 {
                     FileName = binary,
-                    Arguments = $"-device wintun://{tunAdapterName} -proxy socks5://127.0.0.1:{_socksPort}",
+                    Arguments = $"-device wintun://{tunAdapterName} -proxy socks5://127.0.0.1:{targetPort}",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
