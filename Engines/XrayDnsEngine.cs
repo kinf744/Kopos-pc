@@ -56,7 +56,7 @@ namespace KighmuVpnWindows.Engines
         private string CleanPublicKey => _profile.PublicKey
             .Trim()
             .Replace(" ", "").Replace("\n", "").Replace("\r", "").Replace("\t", "")
-            .Replace("(", "").Replace(")", "").Replace("'", "").Replace(""", "")
+            .Replace("(", "").Replace(")", "").Replace("'", "").Replace("\"", "")
             .Replace("`", "").Replace(";", "").Replace("&", "").Replace("|", "")
             .Replace("$", "");
 
@@ -238,7 +238,7 @@ namespace KighmuVpnWindows.Engines
                 }
                 if (!hasSocks)
                     cleaned.Add(JObject.Parse(
-                        $"{{"listen":"127.0.0.1","port":{socksPort},"protocol":"socks","settings":{{"udp":true}}}}"));
+                        $"{{\"listen\":\"127.0.0.1\",\"port\":{socksPort},\"protocol\":\"socks\",\"settings\":{{\"udp\":true}}}}"));
 
                 obj["inbounds"] = cleaned;
 
@@ -308,11 +308,11 @@ namespace KighmuVpnWindows.Engines
 
             return net switch
             {
-                "ws"                   => $"{{"network":"ws","security":"none","wsSettings":{{"path":"{path}","headers":{{"Host":"{host}"}}}}}}",
-                "grpc"                 => $"{{"network":"grpc","security":"none","grpcSettings":{{"serviceName":"{grpcSvc}","multiMode":false}}}}",
-                "xhttp" or "splithttp" => $"{{"network":"xhttp","security":"none","xhttpSettings":{{"path":"{path}","host":"{host}","mode":"auto"}}}}",
-                "h2" or "http"         => $"{{"network":"h2","security":"none","httpSettings":{{"path":"{path}","host":["{host}"]}}}}",
-                "httpupgrade"          => $"{{"network":"httpupgrade","security":"none","httpupgradeSettings":{{"path":"{path}","host":"{host}"}}}}",
+                "ws"                   => $"{{\"network\":\"ws\",\"security\":\"none\",\"wsSettings\":{{\"path\":\"{path}\",\"headers\":{{\"Host\":\"{host}\"}}}}}}",
+                "grpc"                 => $"{{\"network\":\"grpc\",\"security\":\"none\",\"grpcSettings\":{{\"serviceName\":\"{grpcSvc}\",\"multiMode\":false}}}}",
+                "xhttp" or "splithttp" => $"{{\"network\":\"xhttp\",\"security\":\"none\",\"xhttpSettings\":{{\"path\":\"{path}\",\"host\":\"{host}\",\"mode\":\"auto\"}}}}",
+                "h2" or "http"         => $"{{\"network\":\"h2\",\"security\":\"none\",\"httpSettings\":{{\"path\":\"{path}\",\"host\":[\"{host}\"]}}}}",
+                "httpupgrade"          => $"{{\"network\":\"httpupgrade\",\"security\":\"none\",\"httpupgradeSettings\":{{\"path\":\"{path}\",\"host\":\"{host}\"}}}}",
                 "kcp" or "mkcp"        => "{"network":"kcp","security":"none","kcpSettings":{"mtu":1350,"tti":20,"uplinkCapacity":5,"downlinkCapacity":20,"congestion":false,"readBufferSize":2,"writeBufferSize":2,"header":{"type":"none"}}}",
                 _                      => "{"network":"tcp","security":"none"}"
             };
@@ -326,12 +326,12 @@ namespace KighmuVpnWindows.Engines
 
             string outbound = proto switch
             {
-                "vmess"  => $"{{"protocol":"vmess","settings":{{"vnext":[{{"address":"127.0.0.1","port":{dnsttPort},"users":[{{"id":"{uuid}","alterId":0,"security":"auto"}}]}}]}},"streamSettings":{stream}}}",
-                "trojan" => $"{{"protocol":"trojan","settings":{{"servers":[{{"address":"127.0.0.1","port":{dnsttPort},"password":"{uuid}"}}]}},"streamSettings":{stream}}}",
-                _        => $"{{"protocol":"vless","settings":{{"vnext":[{{"address":"127.0.0.1","port":{dnsttPort},"users":[{{"id":"{uuid}","encryption":"none"}}]}}]}},"streamSettings":{stream}}}"
+                "vmess"  => $"{{\"protocol\":\"vmess\",\"settings\":{{\"vnext\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"users\":[{{\"id\":\"{uuid}\",\"alterId\":0,\"security\":\"auto\"}}]}}]}},\"streamSettings\":{stream}}}",
+                "trojan" => $"{{\"protocol\":\"trojan\",\"settings\":{{\"servers\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"password\":\"{uuid}\"}}]}},\"streamSettings\":{stream}}}",
+                _        => $"{{\"protocol\":\"vless\",\"settings\":{{\"vnext\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"users\":[{{\"id\":\"{uuid}\",\"encryption\":\"none\"}}]}}]}},\"streamSettings\":{stream}}}"
             };
 
-            return $"{{"log":{{"loglevel":"warning"}},"inbounds":[{{"port":{socksPort},"listen":"127.0.0.1","protocol":"socks","settings":{{"udp":true}}}}],"outbounds":[{outbound},{{"protocol":"freedom","tag":"direct"}}],"routing":{{"rules":[]}}}}";
+            return $"{{\"log\":{{\"loglevel\":\"warning\"}},\"inbounds\":[{{\"port\":{socksPort},\"listen\":\"127.0.0.1\",\"protocol\":\"socks\",\"settings\":{{\"udp\":true}}}}],\"outbounds\":[{outbound},{{\"protocol\":\"freedom\",\"tag\":\"direct\"}}],\"routing\":{{\"rules\":[]}}}}";
         }
 
         private void StartXrayProcess(string binary, string configPath)
@@ -339,7 +339,7 @@ namespace KighmuVpnWindows.Engines
             var psi = new ProcessStartInfo
             {
                 FileName               = binary,
-                Arguments              = $"run -c "{configPath}"",
+                Arguments              = $"run -c \"{configPath}\"",
                 UseShellExecute        = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
