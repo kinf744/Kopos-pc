@@ -139,7 +139,7 @@ namespace KighmuVpnWindows.Engines
 
             // STEP 3 : Démarrer le balancer sur tous les ports SOCKS connectés
             var connectedPorts = successPorts.Count > 0 ? successPorts : new List<int> { SlowDnsEngine.BASE_SOCKS_PORT };
-            KighmuLogger.Info(TAG, $"Ports SOCKS actifs: [{string.Join(",", connectedPorts)}]");
+            KighmuLogger.Info(TAG, $"Ports SOCKS actifs: [{string.Join(\",\", connectedPorts)}]");
 
             // Diagnostic : vérifier chaque port SOCKS avant de démarrer le balancer
             foreach (var port in connectedPorts)

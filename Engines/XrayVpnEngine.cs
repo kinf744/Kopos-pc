@@ -143,7 +143,7 @@ namespace KighmuVpnWindows.Engines
                 if (!hasSocks)
                 {
                     cleaned.Add(JObject.Parse(
-                        $"{{"listen":"127.0.0.1","port":{socksPort},"protocol":"socks","settings":{{"udp":true}}}}"));
+                        $"{{\"listen\":\"127.0.0.1\",\"port\":{socksPort},\"protocol\":\"socks\",\"settings\":{{\"udp\":true}}}}"));
                 }
 
                 obj["inbounds"] = cleaned;
@@ -195,15 +195,14 @@ namespace KighmuVpnWindows.Engines
                 string fp  = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint;
                 string sid = string.IsNullOrWhiteSpace(_profile.ShortId)     ? "0000000000000000" : _profile.ShortId;
                 string sn  = string.IsNullOrWhiteSpace(_profile.Sni)         ? _profile.ServerAddress : _profile.Sni;
-                return $""security":"reality","realitySettings":{{"serverName":"{sn}","fingerprint":"{fp}","publicKey":"{_profile.PublicKey}","shortId":"{sid}"}}";
-            }
+                return $"\"security\":\"reality\",\"realitySettings\":{{\"serverName\":\"{sn}\",\"fingerprint\":\"{fp}\",\"publicKey\":\"{_profile.PublicKey}\",\"shortId\":\"{sid}\"}}";\n            }
             else
             {
                 // TLS standard
                 string sni      = string.IsNullOrWhiteSpace(_profile.Sni) ? _profile.ServerAddress : _profile.Sni;
                 string insecure = _profile.AllowInsecure ? "true" : "false";
                 string fp       = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint;
-                return $""security":"tls","tlsSettings":{{"serverName":"{sni}","allowInsecure":{insecure},"fingerprint":"{fp}"}}";
+                return $"\"security\":\"tls\",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"allowInsecure\":{insecure},\"fingerprint\":\"{fp}\"}}"; 
             }
         }
 
@@ -224,18 +223,18 @@ namespace KighmuVpnWindows.Engines
 
             string networkPart = net switch
             {
-                "ws"                      => $""network":"ws","wsSettings":{{"path":"{p}","headers":{{"Host":"{h}"}}}}",
-                "grpc"                    => $""network":"grpc","grpcSettings":{{"serviceName":"{grpcSvc}","multiMode":false}}",
-                "xhttp" or "splithttp"    => $""network":"xhttp","xhttpSettings":{{"path":"{p}","host":"{h}","mode":"auto"}}",
-                "h2" or "http"            => $""network":"h2","httpSettings":{{"path":"{p}","host":["{h}"]}}",
-                "httpupgrade"             => $""network":"httpupgrade","httpupgradeSettings":{{"path":"{p}","host":"{h}"}}",
-                "kcp" or "mkcp"           => $""network":"kcp","kcpSettings":{{"mtu":1350,"tti":20,"uplinkCapacity":5,"downlinkCapacity":20,"congestion":false,"readBufferSize":2,"writeBufferSize":2,"header":{{"type":"{kcpHdr}"}}}}",
+                "ws"                      => $"{{\"network\":\"ws\",\"wsSettings\":{{\"path\":\"{p}\",\"headers\":{{\"Host\":\"{h}\"}}}}}}",
+                "grpc"                    => $"{{\"network\":\"grpc\",\"grpcSettings\":{{\"serviceName\":\"{grpcSvc}\",\"multiMode\":false}}}}",
+                "xhttp" or "splithttp"    => $"{{\"network\":\"xhttp\",\"xhttpSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\",\"mode\":\"auto\"}}}}",
+                "h2" or "http"            => $"{{\"network\":\"h2\",\"httpSettings\":{{\"path\":\"{p}\",\"host\":[\"{ h}\"]}}}}",
+                "httpupgrade"             => $"{{\"network\":\"httpupgrade\",\"httpupgradeSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\"}}}}",
+                "kcp" or "mkcp"           => $"{{\"network\":\"kcp\",\"kcpSettings\":{{\"mtu\":1350,\"tti\":20,\"uplinkCapacity\":5,\"downlinkCapacity\":20,\"congestion\":false,\"readBufferSize\":2,\"writeBufferSize\":2,\"header\":{{\"type\":\"none\"}}}}}}",
                 _                         => ""network":"tcp","tcpSettings":{}"
             };
 
             return !string.IsNullOrWhiteSpace(tlsPart)
-                ? $"{{{networkPart},"security":"{security}",{tlsPart}}}"
-                : $"{{{networkPart},"security":"none"}}";
+                ? $"{{{networkPart},\"security\":\"{security}\",{tlsPart}}}"
+                : $"{{{networkPart},\"security\":\"none\"}}";
         }
 
         private string BuildXrayConfigFromProfile(int socksPort)
@@ -248,12 +247,12 @@ namespace KighmuVpnWindows.Engines
 
             string outbound = proto switch
             {
-                "vmess"  => $"{{"protocol":"vmess","settings":{{"vnext":[{{"address":"{host}","port":{port},"users":[{{"id":"{uuid}","alterId":0,"security":"auto"}}]}}]}},"streamSettings":{stream}}}",
-                "trojan" => $"{{"protocol":"trojan","settings":{{"servers":[{{"address":"{host}","port":{port},"password":"{uuid}"}}]}},"streamSettings":{stream}}}",
-                _        => $"{{"protocol":"vless","settings":{{"vnext":[{{"address":"{host}","port":{port},"users":[{{"id":"{uuid}","encryption":"none"}}]}}]}},"streamSettings":{stream}}}"
+                "vmess"  => $"{{\"protocol\":\"vmess\",\"settings\":{{\"vnext\":[{{\"address\":\"{host}\",\"port\":{port},\"users\":[{{\"id\":\"{uuid}\",\"alterId\":0,\"security\":\"auto\"}}]}}]}},\"streamSettings\":{stream}}}",
+                "trojan" => $"{{\"protocol\":\"trojan\",\"settings\":{{\"servers\":[{{\"address\":\"{host}\",\"port\":{port},\"password\":\"{uuid}\"}}]}},\"streamSettings\":{stream}}}",
+                _        => $"{{\"protocol\":\"vless\",\"settings\":{{\"vnext\":[{{\"address\":\"{host}\",\"port\":{port},\"users\":[{{\"id\":\"{uuid}\",\"encryption\":\"none\"}}]}}]}},\"streamSettings\":{stream}}}"
             };
 
-            return $"{{"log":{{"loglevel":"warning"}},"inbounds":[{{"port":{socksPort},"listen":"127.0.0.1","protocol":"socks","settings":{{"udp":true}}}}],"outbounds":[{outbound},{{"protocol":"freedom","tag":"direct"}}],"routing":{{"rules":[]}}}}";
+            return $"{{\"log\":{{\"loglevel\":\"warning\"}},\"inbounds\":[{{\"port\":{socksPort},\"listen\":\"127.0.0.1\",\"protocol\":\"socks\",\"settings\":{{\"udp\":true}}}}],\"outbounds\":[{outbound},{{\"protocol\":\"freedom\",\"tag\":\"direct\"}}],\"routing\":{{\"rules\":[]}}}}";
         }
 
         private void StartXrayProcess(string binary, string configPath)
@@ -261,7 +260,7 @@ namespace KighmuVpnWindows.Engines
             var psi = new ProcessStartInfo
             {
                 FileName               = binary,
-                Arguments              = $"run -c "{configPath}"",
+                Arguments              = $"run -c \"{configPath}\"",
                 UseShellExecute        = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
