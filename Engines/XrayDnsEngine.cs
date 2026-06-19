@@ -313,8 +313,8 @@ namespace KighmuVpnWindows.Engines
                 "xhttp" or "splithttp" => $"{{\"network\":\"xhttp\",\"security\":\"none\",\"xhttpSettings\":{{\"path\":\"{path}\",\"host\":\"{host}\",\"mode\":\"auto\"}}}}",
                 "h2" or "http"         => $"{{\"network\":\"h2\",\"security\":\"none\",\"httpSettings\":{{\"path\":\"{path}\",\"host\":[\"{host}\"]}}}}",
                 "httpupgrade"          => $"{{\"network\":\"httpupgrade\",\"security\":\"none\",\"httpupgradeSettings\":{{\"path\":\"{path}\",\"host\":\"{host}\"}}}}",
-                "kcp" or "mkcp"        => "{"network":"kcp","security":"none","kcpSettings":{"mtu":1350,"tti":20,"uplinkCapacity":5,"downlinkCapacity":20,"congestion":false,"readBufferSize":2,"writeBufferSize":2,"header":{"type":"none"}}}",
-                _                      => "{"network":"tcp","security":"none"}"
+                "kcp" or "mkcp"        => "{\"network\":\"kcp\",\"security\":\"none\",\"kcpSettings\":{\"mtu\":1350,\"tti\":20,\"uplinkCapacity\":5,\"downlinkCapacity\":20,\"congestion\":false,\"readBufferSize\":2,\"writeBufferSize\":2,\"header\":{\"type\":\"none\"}}}",
+                _                      => "{\"network\":\"tcp\",\"security\":\"none\"}"
             };
         }
 
