@@ -1,0 +1,58 @@
+<UserControl x:Class="KighmuVpnWindows.UI.Views.ConfigView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundDarkBrush}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+
+            <TextBlock Text="Configuration du tunnel" FontSize="18" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16" />
+
+            <!-- ===== Sélecteur de mode ===== -->
+            <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="MODE DE TUNNEL" Style="{StaticResource KighmuSectionHeader}" />
+                    <ComboBox x:Name="ModeSelector" Style="{StaticResource KighmuComboBox}"
+                              SelectionChanged="ModeSelector_SelectionChanged" Margin="0,4,0,0">
+                        <ComboBoxItem Content="SlowDNS" Tag="0" />
+                        <ComboBoxItem Content="HTTP Proxy" Tag="1" />
+                        <ComboBoxItem Content="SSH WebSocket" Tag="2" />
+                        <ComboBoxItem Content="SSH SSL/TLS" Tag="3" />
+                        <ComboBoxItem Content="V2Ray / Xray" Tag="4" />
+                        <ComboBoxItem Content="V2Ray + SlowDNS" Tag="5" />
+                        <ComboBoxItem Content="Hysteria UDP" Tag="6" />
+                    </ComboBox>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Champs dynamiques selon le mode (remplis en code-behind) ===== -->
+            <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                <StackPanel x:Name="DynamicFieldsPanel">
+                    <TextBlock Text="PARAMÈTRES" Style="{StaticResource KighmuSectionHeader}" />
+                    <!-- Les champs (serveur, port, clé SNI, payload, etc.)
+                         sont injectés ici selon le mode sélectionné -->
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Liste des profils enregistrés ===== -->
+            <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="PROFILS ENREGISTRÉS" Style="{StaticResource KighmuSectionHeader}" />
+                    <ListBox x:Name="ProfilesList" Background="Transparent" BorderThickness="0"
+                             Foreground="{StaticResource TextPrimaryBrush}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Importer" Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Click="Import_Click" Margin="0,0,8,0" />
+                <Button Content="Exporter" Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Click="Export_Click" Margin="0,0,8,0" />
+                <Button Content="Enregistrer" Style="{StaticResource KighmuButton}"
+                        Click="Save_Click" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
