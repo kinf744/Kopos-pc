@@ -135,8 +135,7 @@ namespace KighmuVpnWindows
         {
             MenuPopup.IsOpen = false;
             var result = MessageBox.Show(
-                "Reinitialiser toute la configuration ?
-Tous les profils seront supprimes.",
+                "Reinitialiser toute la configuration ? Tous les profils seront supprimes.",
                 "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result != MessageBoxResult.Yes) return;
             try
