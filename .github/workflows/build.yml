@@ -18,7 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET 8
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
@@ -62,7 +62,7 @@ jobs:
           ls -lh bin/win/
 
       - name: Build (Release)
-        run: dotnet publish KighmuVpnWindows.csproj -c Release -r win-x64 --self-contained true -p:PublishTrimmed=false -o publish/
+        run: dotnet publish KighmuVpnWindows.csproj -c Release -o publish/
 
       - name: Creer ZIP de distribution
         shell: pwsh
@@ -90,6 +90,6 @@ jobs:
             KighmuVPN-Windows.zip
           body: |
             Build automatique depuis le commit ${{ github.sha }}
-            Mode: Release | Plateforme: Windows x64
+            Compatible: Windows 7 SP1 x64 et Windows 10/11
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
