@@ -160,24 +160,34 @@ namespace KighmuVpnWindows.Profiles
         private static string StreamSettings(string transport, string security, string sni,
             string path, string host, string fp = "chrome", string pbk = "", string sid = "")
         {
-            string tlsPart = security == "tls"
-                ? $","tlsSettings":{{"serverName":"{sni}","fingerprint":"{fp}"}}"
-                : security == "reality"
-                ? $","realitySettings":{{"serverName":"{sni}","fingerprint":"{fp}","publicKey":"{pbk}","shortId":"{sid}"}}"
-                : "";
+            string tlsPart;
+            if (security == "tls")
+                tlsPart = $",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"fingerprint\":\"{fp}\"}}";
+            else if (security == "reality")
+                tlsPart = $",\"realitySettings\":{{\"serverName\":\"{sni}\",\"fingerprint\":\"{fp}\",\"publicKey\":\"{pbk}\",\"shortId\":\"{sid}\"}}";
+            else
+                tlsPart = "";
+
             string net = transport == "mkcp" ? "kcp" : transport == "raw" ? "tcp" : transport;
-            string netPart = transport switch
-            {
-                "ws"          => $","wsSettings":{{"path":"{path}","headers":{{"Host":"{host}"}}}}",
-                "grpc"        => $","grpcSettings":{{"serviceName":"{path}"}}",
-                "xhttp"       => $","xhttpSettings":{{"path":"{path}","host":"{host}","mode":"stream-up"}}",
-                "splithttp"   => $","splithttpSettings":{{"path":"{path}","host":"{host}"}}",
-                "h2" or "http"=> $","httpSettings":{{"path":"{path}","host":["{host}"]}}",
-                "httpupgrade" => $","httpupgradeSettings":{{"path":"{path}","host":"{host}"}}",
-                "kcp" or "mkcp"=> $","kcpSettings":{{"mtu":1350,"tti":20,"uplinkCapacity":5,"downlinkCapacity":20,"congestion":false,"readBufferSize":2,"writeBufferSize":2,"header":{{"type":"none"}}}}",
-                _             => ","tcpSettings":{"header":{"type":"none"}}"
-            };
-            return $"{{"network":"{net}","security":"{security}"{tlsPart}{netPart}}}";
+            string netPart;
+            if (transport == "ws")
+                netPart = $",\"wsSettings\":{{\"path\":\"{path}\",\"headers\":{{\"Host\":\"{host}\"}}}}";
+            else if (transport == "grpc")
+                netPart = $",\"grpcSettings\":{{\"serviceName\":\"{path}\"}}";
+            else if (transport == "xhttp")
+                netPart = $",\"xhttpSettings\":{{\"path\":\"{path}\",\"host\":\"{host}\",\"mode\":\"stream-up\"}}";
+            else if (transport == "splithttp")
+                netPart = $",\"splithttpSettings\":{{\"path\":\"{path}\",\"host\":\"{host}\"}}";
+            else if (transport == "h2" || transport == "http")
+                netPart = $",\"httpSettings\":{{\"path\":\"{path}\",\"host\":[\"\"{host}\"\"]}}";
+            else if (transport == "httpupgrade")
+                netPart = $",\"httpupgradeSettings\":{{\"path\":\"{path}\",\"host\":\"{host}\"}}";
+            else if (transport == "kcp" || transport == "mkcp")
+                netPart = $",\"kcpSettings\":{{\"mtu\":1350,\"tti\":20,\"uplinkCapacity\":5,\"downlinkCapacity\":20,\"congestion\":false,\"readBufferSize\":2,\"writeBufferSize\":2,\"header\":{{\"type\":\"none\"}}}}";
+            else
+                netPart = ",\"tcpSettings\":{{\"header\":{{\"type\":\"none\"}}}}";
+
+            return $"{{\"network\":\"{net}\",\"security\":\"{security}\"{tlsPart}{netPart}}}";
         }
 
         private static string BuildVmessJson(Newtonsoft.Json.Linq.JObject obj,
