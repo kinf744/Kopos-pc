@@ -20,7 +20,7 @@
                 Padding="16,8">
             <Grid>
                 <TextBlock FontSize="16" FontWeight="Bold"
-                           VerticalAlignment="Center">
+                           HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock.Inlines>
                         <Run Text="KIGHMU " Foreground="{StaticResource TextPrimaryBrush}" />
                         <Run Text="VPN" Foreground="{StaticResource AccentBlueBrush}" />
