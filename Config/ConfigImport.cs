@@ -70,30 +70,30 @@ namespace KighmuVpnWindows.Config
         {
             // SlowDNS
             TryImportList<SlowDnsProfile>(configToken, "slowDnsProfiles",
-                new SlowDnsProfileRepository());
+                item => new SlowDnsProfileRepository().Add(item));
 
             // HTTP Proxy
             TryImportList<HttpProxyProfile>(configToken, "httpProxyProfiles",
-                new HttpProxyProfileRepository());
+                item => new HttpProxyProfileRepository().Add(item));
 
             // Hysteria
             TryImportList<HysteriaProfile>(configToken, "hysteriaProfiles",
-                new HysteriaProfileRepository());
+                item => new HysteriaProfileRepository().Add(item));
 
             // Xray VPN
             TryImportList<XrayVpnProfile>(configToken, "xrayVpnProfiles",
-                new XrayVpnProfileRepository());
+                item => new XrayVpnProfileRepository().Add(item));
 
             // Xray DNS
             TryImportList<XrayDnsProfile>(configToken, "xrayDnsProfiles",
-                new XrayDnsProfileRepository());
+                item => new XrayDnsProfileRepository().Add(item));
 
             // SSH SSL
             TryImportList<SshSslProfile>(configToken, "sshSslProfiles",
-                new SshSslProfileRepository());
+                item => new SshSslProfileRepository().Add(item));
         }
 
-        private void TryImportList<T>(JToken config, string key, dynamic repo)
+        private void TryImportList<T>(JToken config, string key, Action<T> addItem)
         {
             try
             {
@@ -102,7 +102,7 @@ namespace KighmuVpnWindows.Config
                 var list = arr.ToObject<List<T>>();
                 if (list == null) return;
                 foreach (var item in list)
-                    repo.Add(item);
+                    addItem(item);
             }
             catch { }
         }
