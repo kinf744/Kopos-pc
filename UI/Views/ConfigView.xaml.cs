@@ -17,6 +17,7 @@ namespace KighmuVpnWindows.UI.Views
         private readonly HysteriaProfileRepository   _hysteriaRepo   = new HysteriaProfileRepository();
         private readonly XrayDnsProfileRepository      _xrayDnsRepo    = new XrayDnsProfileRepository();
         private readonly HttpProxyProfileRepository    _httpProxyRepo  = new HttpProxyProfileRepository();
+        private readonly XrayVpnProfileRepository      _xrayVpnRepo    = new XrayVpnProfileRepository();
 
         // Correspondance index d'onglet -> TunnelMode (sans ZIVPN, retire pour Windows)
         private readonly TunnelMode[] _tabModes = new[]
@@ -82,6 +83,8 @@ namespace KighmuVpnWindows.UI.Views
                 RefreshV2DnsList();
             else if (_selectedMode == TunnelMode.HTTP_PROXY)
                 RefreshHttpProxyList();
+            else if (_selectedMode == TunnelMode.V2RAY_XRAY)
+                RefreshXrayList();
 
             // TODO (prochaines etapes) : charger les champs / la liste des autres modes ici
         }
@@ -416,6 +419,88 @@ namespace KighmuVpnWindows.UI.Views
             {
                 _httpProxyRepo.Add(newProfile);
                 RefreshHttpProxyList();
+            });
+        }
+
+        // ── V2Ray/Xray : liste de profils ───────────────────────────────────────
+        private void RefreshXrayList()
+        {
+            XrayProfilesList.Children.Clear();
+            var profiles = _xrayVpnRepo.GetAll();
+            for (int i = 0; i < profiles.Count; i++)
+                XrayProfilesList.Children.Add(BuildXrayRow(profiles[i], i));
+        }
+
+        private UIElement BuildXrayRow(XrayVpnProfile p, int index)
+        {
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var checkBox = new CheckBox
+            {
+                IsChecked         = p.IsSelected,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin            = new Thickness(0, 0, 8, 0)
+            };
+            checkBox.Checked   += (s, e) => _xrayVpnRepo.UpdateSelection(p.Id, true);
+            checkBox.Unchecked += (s, e) => _xrayVpnRepo.UpdateSelection(p.Id, false);
+            Grid.SetColumn(checkBox, 0);
+
+            var textPanel = new StackPanel();
+            var name = string.IsNullOrWhiteSpace(p.ProfileName) ? $"Profil {index + 1}" : p.ProfileName;
+            textPanel.Children.Add(new TextBlock
+            {
+                Text       = name,
+                Foreground = (Brush)TryFindResource("TextPrimaryBrush") ?? Brushes.White,
+                FontSize   = 14
+            });
+            textPanel.Children.Add(new TextBlock
+            {
+                Text       = $"{p.Protocol}  {p.ServerAddress}:{p.ServerPort}  {p.Transport}",
+                Foreground = (Brush)TryFindResource("TextHintBrush") ?? Brushes.Gray,
+                FontSize   = 11
+            });
+            Grid.SetColumn(textPanel, 1);
+
+            var menu        = new ContextMenu();
+            var editItem    = new MenuItem { Header = "Modifier" };
+            editItem.Click += (s, e) => EditXrayProfile(p);
+            var cloneItem    = new MenuItem { Header = "Cloner" };
+            cloneItem.Click += (s, e) => { _xrayVpnRepo.Clone(p.Id); RefreshXrayList(); };
+            var deleteItem    = new MenuItem { Header = "Supprimer" };
+            deleteItem.Click += (s, e) =>
+            {
+                if (MessageBox.Show($"Supprimer '{name}' ?", "Confirmation",
+                        MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+                _xrayVpnRepo.Delete(p.Id);
+                RefreshXrayList();
+            };
+            menu.Items.Add(editItem);
+            menu.Items.Add(cloneItem);
+            menu.Items.Add(deleteItem);
+            row.ContextMenu = menu;
+
+            row.Children.Add(checkBox);
+            row.Children.Add(textPanel);
+            return row;
+        }
+
+        private void EditXrayProfile(XrayVpnProfile p)
+        {
+            XrayVpnProfileEditDialog.Show(Window.GetWindow(this), p, updated =>
+            {
+                _xrayVpnRepo.Update(updated);
+                RefreshXrayList();
+            });
+        }
+
+        private void BtnAddXray_Click(object sender, RoutedEventArgs e)
+        {
+            XrayVpnProfileEditDialog.Show(Window.GetWindow(this), null, newProfile =>
+            {
+                _xrayVpnRepo.Add(newProfile);
+                RefreshXrayList();
             });
         }
 
