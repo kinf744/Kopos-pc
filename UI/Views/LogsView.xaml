@@ -8,11 +8,19 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Logs" FontSize="18" FontWeight="Bold"
-                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12" />
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Logs" FontSize="18" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="Effacer" Click="Clear_Click"
+                    Style="{StaticResource MaterialDesignFlatButton}" />
+        </Grid>
 
         <Border Grid.Row="1" Style="{StaticResource KighmuCard}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto">
                 <TextBlock x:Name="LogOutput" Style="{StaticResource KighmuLogText}"
                            Text="En attente de connexion..." />
             </ScrollViewer>

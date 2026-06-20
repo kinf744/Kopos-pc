@@ -20,6 +20,24 @@ namespace KighmuVpnWindows.Utils
             Directory.CreateDirectory(LogDir);
         }
 
+        /// <summary>Retourne les N dernieres lignes du fichier de log (pour affichage historique).</summary>
+        public static string[] GetRecentLines(int maxLines = 200)
+        {
+            lock (_lock)
+            {
+                try
+                {
+                    if (!File.Exists(LogFile)) return Array.Empty<string>();
+                    var allLines = File.ReadAllLines(LogFile);
+                    return allLines.Length <= maxLines ? allLines : allLines[^maxLines..];
+                }
+                catch
+                {
+                    return Array.Empty<string>();
+                }
+            }
+        }
+
         public static void Info(string tag, string message) => Write("INFO", tag, message);
         public static void Error(string tag, string message) => Write("ERROR", tag, message);
         public static void Warning(string tag, string message) => Write("WARN", tag, message);
