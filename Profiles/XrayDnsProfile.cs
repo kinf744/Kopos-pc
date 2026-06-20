@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace KighmuVpnWindows.Profiles
 {
@@ -47,5 +48,51 @@ namespace KighmuVpnWindows.Profiles
 
         public static string ListToJson(List<XrayDnsProfile> list) =>
             JsonConvert.SerializeObject(list);
+
+        public static void ParseLinkIntoProfile(string link, XrayDnsProfile p)
+        {
+            try
+            {
+                if (link.StartsWith("vmess://"))
+                {
+                    var b64 = link.Substring("vmess://".Length);
+                    var json = Encoding.UTF8.GetString(Convert.FromBase64String(b64));
+                    var obj  = Newtonsoft.Json.Linq.JObject.Parse(json);
+                    p.Protocol      = "vmess";
+                    p.ServerAddress = obj["add"]?.ToString() ?? "";
+                    p.ServerPort    = obj["port"] != null ? int.Parse(obj["port"].ToString()) : 443;
+                    p.Uuid          = obj["id"]?.ToString() ?? "";
+                    p.Encryption    = obj["scy"]?.ToString() ?? "auto";
+                    p.Transport     = obj["net"]?.ToString() ?? "tcp";
+                    p.WsPath        = obj["path"]?.ToString() ?? "/";
+                    p.WsHost        = obj["host"]?.ToString() ?? "";
+                    p.Tls           = obj["tls"]?.ToString() == "tls";
+                    p.Sni           = obj["sni"]?.ToString() ?? p.ServerAddress;
+                }
+                else if (link.StartsWith("vless://") || link.StartsWith("trojan://"))
+                {
+                    var uri = new Uri(link);
+                    p.Protocol      = link.StartsWith("vless://") ? "vless" : "trojan";
+                    p.Uuid          = uri.UserInfo ?? "";
+                    p.ServerAddress = uri.Host ?? "";
+                    p.ServerPort    = uri.Port > 0 ? uri.Port : 443;
+                    var query = uri.Query.TrimStart('?');
+                    var parms = new Dictionary<string, string>();
+                    foreach (var part in query.Split('&'))
+                    {
+                        var kv = part.Split('=');
+                        if (kv.Length == 2)
+                            parms[kv[0]] = Uri.UnescapeDataString(kv[1]);
+                    }
+                    p.Transport     = parms.ContainsKey("type")     ? parms["type"]     : "tcp";
+                    p.Tls           = parms.ContainsKey("security") && (parms["security"] == "tls" || parms["security"] == "reality");
+                    p.Sni           = parms.ContainsKey("sni")      ? parms["sni"]      : p.ServerAddress;
+                    p.WsPath        = parms.ContainsKey("path")     ? parms["path"]     : "/";
+                    p.WsHost        = parms.ContainsKey("host")     ? parms["host"]     : "";
+                    p.AllowInsecure = parms.ContainsKey("allowInsecure") && (parms["allowInsecure"] == "1" || parms["allowInsecure"] == "true");
+                }
+            }
+            catch { }
+        }
     }
 }

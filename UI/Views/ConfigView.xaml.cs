@@ -92,13 +92,13 @@ namespace KighmuVpnWindows.UI.Views
                     AddJsonField("Ou coller config JSON Xray");
                     break;
                 case TunnelMode.V2RAY_SLOWDNS:
-                    AddField("Nom du profil",     "profileName",   "Mon profil V2Ray+DNS");
-                    AddField("Serveur DNS dnstt", "dnsServer",     "8.8.8.8");
-                    AddField("Nameserver",        "nameserver",    "ns1.example.com");
-                    AddField("Cle publique",      "publicKey",     "");
-                    AddField("Serveur Xray",      "serverAddress", "vpn.example.com");
-                    AddField("Port Xray",         "serverPort",    "443");
-                    AddField("UUID",              "uuid",          "");
+                    AddField("Nom du profil",              "profileName", "Mon profil V2Ray+DNS");
+                    AddLinkField("Lien V2Ray/Xray", "xrayLink", "vmess:// vless:// trojan:// ss://");
+                    AddField("Serveur DNS",                "dnsServer",   "8.8.8.8");
+                    AddField("Port DNS",                   "dnsPort",     "53");
+                    AddField("Nameserver (dnstt target)",  "nameserver",  "ns1.example.com");
+                    AddField("Cle publique",               "publicKey",   "");
+                    AddSlider("Flux simultanes",            "tunnelCount", 1, 4, 1);
                     break;
                 case TunnelMode.HYSTERIA_UDP:
                     AddField("Nom du profil",     "profileName",   "Mon profil Hysteria");
@@ -135,6 +135,60 @@ namespace KighmuVpnWindows.UI.Views
                 DynamicFieldsPanel.Children.Add(new TextBox { Tag = tag, Text = placeholder });
         }
 
+        private void AddLinkField(string label, string tag, string placeholder)
+        {
+            DynamicFieldsPanel.Children.Add(new TextBlock
+            {
+                Text       = label,
+                Margin     = new Thickness(0, 8, 0, 2),
+                Foreground = (System.Windows.Media.Brush)TryFindResource("TextSecondaryBrush")
+                          ?? System.Windows.Media.Brushes.Gray
+            });
+            DynamicFieldsPanel.Children.Add(new TextBox
+            {
+                Tag                         = tag,
+                Text                        = placeholder,
+                AcceptsReturn               = false,
+                Height                      = 60,
+                TextWrapping                = TextWrapping.Wrap,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                FontFamily                  = new System.Windows.Media.FontFamily("Consolas"),
+                FontSize                    = 11
+            });
+        }
+
+        private void AddSlider(string label, string tag, int min, int max, int defaultVal)
+        {
+            var lbl = new TextBlock
+            {
+                Text       = $"{label} : {defaultVal}",
+                Margin     = new Thickness(0, 8, 0, 2),
+                Foreground = (System.Windows.Media.Brush)TryFindResource("TextSecondaryBrush")
+                          ?? System.Windows.Media.Brushes.Gray
+            };
+            DynamicFieldsPanel.Children.Add(lbl);
+            var slider = new Slider
+            {
+                Tag      = tag,
+                Minimum  = min,
+                Maximum  = max,
+                Value    = defaultVal,
+                IsSnapToTickEnabled = true,
+                TickFrequency = 1,
+                Margin   = new Thickness(0, 0, 0, 4)
+            };
+            slider.ValueChanged += (s, e) => lbl.Text = $"{label} : {(int)slider.Value}";
+            DynamicFieldsPanel.Children.Add(slider);
+            DynamicFieldsPanel.Children.Add(new TextBlock
+            {
+                Text       = "1 flux = stable  |  2-3 flux = debit x N  |  4 flux = max",
+                Foreground = (System.Windows.Media.Brush)TryFindResource("TextHintBrush")
+                          ?? System.Windows.Media.Brushes.Gray,
+                FontSize   = 11,
+                Margin     = new Thickness(0, 0, 0, 8)
+            });
+        }
+
         private void AddJsonField(string label)
         {
             DynamicFieldsPanel.Children.Add(new TextBlock { Text = label, Margin = new Thickness(0, 12, 0, 2) });
@@ -147,6 +201,14 @@ namespace KighmuVpnWindows.UI.Views
                 FontFamily                  = new System.Windows.Media.FontFamily("Consolas"),
                 FontSize                    = 11
             });
+        }
+
+        private int GetSliderValue(string tag, int defaultVal)
+        {
+            foreach (UIElement el in DynamicFieldsPanel.Children)
+                if (el is Slider sl && sl.Tag?.ToString() == tag)
+                    return (int)sl.Value;
+            return defaultVal;
         }
 
         private string GetField(string tag)
@@ -242,16 +304,18 @@ namespace KighmuVpnWindows.UI.Views
                     case TunnelMode.V2RAY_SLOWDNS:
                     {
                         var repo = new XrayDnsProfileRepository();
+                        var link = GetField("xrayLink").Trim();
                         var p = new XrayDnsProfile
                         {
-                            ProfileName   = GetField("profileName"),
-                            DnsServer     = GetField("dnsServer"),
-                            Nameserver    = GetField("nameserver"),
-                            PublicKey     = GetField("publicKey"),
-                            ServerAddress = GetField("serverAddress"),
-                            ServerPort    = int.TryParse(GetField("serverPort"), out var v6) ? v6 : 443,
-                            Uuid          = GetField("uuid")
+                            ProfileName  = GetField("profileName"),
+                            XrayLink     = link,
+                            DnsServer    = GetField("dnsServer").Length > 0 ? GetField("dnsServer") : "8.8.8.8",
+                            DnsPort      = int.TryParse(GetField("dnsPort"), out var vdp) ? vdp : 53,
+                            Nameserver   = GetField("nameserver"),
+                            PublicKey    = GetField("publicKey"),
+                            TunnelCount  = GetSliderValue("tunnelCount", 1)
                         };
+                        XrayDnsProfile.ParseLinkIntoProfile(link, p);
                         if (string.IsNullOrWhiteSpace(p.ProfileName))
                             p.ProfileName = "V2Ray+DNS " + DateTime.Now.ToString("HH:mm");
                         repo.Add(p);
