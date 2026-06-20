@@ -64,18 +64,14 @@ jobs:
       - name: Build (Release)
         run: dotnet publish KighmuVpnWindows.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/
 
-      - name: Copier binaires natifs
-        shell: bash
-        run: |
-          cp -r bin/win/. publish/
-          echo "=== Contenu publish/ ==="
-          ls -lh publish/
-
       - name: Creer ZIP de distribution
         shell: pwsh
         run: |
+          echo "=== Contenu publish/ ==="
+          Get-ChildItem publish/ | Select-Object Name, Length | Sort-Object Length -Descending
           Compress-Archive -Path publish\* -DestinationPath KighmuVPN-Windows.zip -Force
-          Get-Item KighmuVPN-Windows.zip | Select-Object Name, Length
+          $zip = Get-Item KighmuVPN-Windows.zip
+          Write-Host ("ZIP final: {0} Mo" -f [math]::Round($zip.Length/1MB, 2))
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
