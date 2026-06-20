@@ -288,7 +288,7 @@ namespace KighmuVpnWindows.Engines
                   && !lower.Contains("connection reset") && !lower.Contains("broken pipe")
                   && !lower.Contains("eof") && !lower.Contains("use of closed")
                   && !lower.Contains("failed to dial"))
-                KighmuLogger.Error(TAG, $"Xray: {line[..Math.Min(150, line.Length)]}");
+                KighmuLogger.Error(TAG, $"Xray: {line.Substring(0, Math.Min(150, line.Length))}");
         }
 
         public void StartTun2Socks(string tunAdapterName) =>
