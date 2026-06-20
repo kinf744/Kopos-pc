@@ -198,19 +198,40 @@ namespace KighmuVpnWindows.Profiles
             string uuid    = obj["id"]?.ToString()  ?? "";
             int    alterId = obj["aid"] != null ? int.Parse(obj["aid"].ToString()) : 0;
             string stream  = StreamSettings(transport, security, sni, path, wsHost);
-            return $"{{"log":{{"loglevel":"warning"}},"inbounds":[{{"port":10808,"protocol":"socks","settings":{{"udp":true}}}}],"outbounds":[{{"protocol":"vmess","settings":{{"vnext":[{{"address":"{host}","port":{port},"users":[{{"id":"{uuid}","alterId":{alterId},"security":"auto"}}]}}]}},"streamSettings":{stream},"mux":{{"enabled":false}}}},{{"protocol":"freedom","tag":"direct"}}],"routing":{{"rules":[]}}}}";
+            return string.Concat(
+                "{\"log\":{\"loglevel\":\"warning\"},",
+                "\"inbounds\":[{\"port\":10808,\"protocol\":\"socks\",\"settings\":{\"udp\":true}}],",
+                "\"outbounds\":[",
+                "{\"protocol\":\"vmess\",\"settings\":{\"vnext\":[{\"address\":\"", host, "\",\"port\":", port.ToString(),
+                ",\"users\":[{\"id\":\"", uuid, "\",\"alterId\":", alterId.ToString(), ",\"security\":\"auto\"}]}]},",
+                "\"streamSettings\":", stream, ",\"mux\":{\"enabled\":false}},",
+                "{\"protocol\":\"freedom\",\"tag\":\"direct\"}],",
+                "\"routing\":{\"rules\":[]}}");
         }
 
         private static string BuildVlessOrTrojanJson(string proto, string uuid, string host, int port,
             string transport, string security, string sni, string path, string wsHost,
             string fp, string pbk, string sid, string flow)
         {
-            string stream  = StreamSettings(transport, security, sni, path, wsHost, fp, pbk, sid);
-            string flowPart = !string.IsNullOrEmpty(flow) ? $","flow":"{flow}"" : "";
-            string outbound = proto == "trojan"
-                ? $"{{"protocol":"trojan","settings":{{"servers":[{{"address":"{host}","port":{port},"password":"{uuid}"}}]}},"streamSettings":{stream},"mux":{{"enabled":false}}}}"
-                : $"{{"protocol":"vless","settings":{{"vnext":[{{"address":"{host}","port":{port},"users":[{{"id":"{uuid}","encryption":"none"{flowPart}}}]}}]}},"streamSettings":{stream},"mux":{{"enabled":false}}}}";
-            return $"{{"log":{{"loglevel":"warning"}},"inbounds":[{{"port":10808,"protocol":"socks","settings":{{"udp":true}}}}],"outbounds":[{outbound},{{"protocol":"freedom","tag":"direct"}}],"routing":{{"rules":[]}}}}";
+            string stream   = StreamSettings(transport, security, sni, path, wsHost, fp, pbk, sid);
+            string flowPart = !string.IsNullOrEmpty(flow) ? string.Concat(",\"flow\":\"", flow, "\"") : "";
+            string outbound;
+            if (proto == "trojan")
+                outbound = string.Concat(
+                    "{\"protocol\":\"trojan\",\"settings\":{\"servers\":[{\"address\":\"", host,
+                    "\",\"port\":", port.ToString(), ",\"password\":\"", uuid, "\"}]},",
+                    "\"streamSettings\":", stream, ",\"mux\":{\"enabled\":false}}");
+            else
+                outbound = string.Concat(
+                    "{\"protocol\":\"vless\",\"settings\":{\"vnext\":[{\"address\":\"", host,
+                    "\",\"port\":", port.ToString(), ",\"users\":[{\"id\":\"", uuid,
+                    "\",\"encryption\":\"none\"", flowPart, "}]}]},",
+                    "\"streamSettings\":", stream, ",\"mux\":{\"enabled\":false}}");
+            return string.Concat(
+                "{\"log\":{\"loglevel\":\"warning\"},",
+                "\"inbounds\":[{\"port\":10808,\"protocol\":\"socks\",\"settings\":{\"udp\":true}}],",
+                "\"outbounds\":[", outbound, ",{\"protocol\":\"freedom\",\"tag\":\"direct\"}],",
+                "\"routing\":{\"rules\":[]}}");
         }
     }
 }
