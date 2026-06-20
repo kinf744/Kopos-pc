@@ -1,63 +1,34 @@
 using KighmuVpnWindows.Config;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace KighmuVpnWindows.Profiles
 {
+    /// <summary>
+    /// SSH SSL/TLS : configuration unique (pas de liste de profils).
+    /// Stockée dans le fichier Prefs\ssh_ssl.json via LocalStorage.
+    /// </summary>
     public class SshSslProfileRepository
     {
-        private const string PREFS_NAME = "sshssl_profiles";
-        private const string KEY        = "profiles";
-        private readonly LocalStorage _storage = new LocalStorage(PREFS_NAME);
+        private const string PrefsName = "ssh_ssl";
+        private const string Key       = "ssh_ssl_config";
 
-        public List<SshSslProfile> GetAll()
+        private readonly LocalStorage _storage;
+
+        public SshSslProfileRepository()
         {
-            var json = _storage.GetString(KEY, "[]");
-            return SshSslProfile.ListFromJson(json);
+            _storage = new LocalStorage(PrefsName);
         }
 
-        public void SaveAll(List<SshSslProfile> profiles)
+        public SshSslProfile GetConfig()
         {
-            _storage.SetString(KEY, SshSslProfile.ListToJson(profiles));
+            var json = _storage.GetString(Key, "");
+            if (string.IsNullOrWhiteSpace(json))
+                return new SshSslProfile();
+            return SshSslProfile.FromJson(json);
         }
 
-        public void Add(SshSslProfile profile)
+        public void SaveConfig(SshSslProfile cfg)
         {
-            var list = GetAll();
-            list.Add(profile);
-            SaveAll(list);
+            _storage.SetString(Key, cfg.ToJson());
         }
-
-        public void Update(SshSslProfile profile)
-        {
-            var list = GetAll();
-            var idx  = list.FindIndex(p => p.Id == profile.Id);
-            if (idx >= 0) list[idx] = profile;
-            else list.Add(profile);
-            SaveAll(list);
-        }
-
-        public void Delete(string id)
-        {
-            var list = GetAll();
-            list.RemoveAll(p => p.Id == id);
-            SaveAll(list);
-        }
-
-        /// <summary>Retourne le profil actif (un seul, pas de multi)</summary>
-        public SshSslProfile? GetActive()
-        {
-            return GetAll().FirstOrDefault(p => p.IsSelected)
-                ?? GetAll().FirstOrDefault();
-        }
-
-        public void SetSelected(string id)
-        {
-            var list = GetAll();
-            foreach (var p in list)
-                p.IsSelected = (p.Id == id);
-            SaveAll(list);
-        }
-        public void DeleteAll() => SaveAll(new System.Collections.Generic.List<SshSslProfile>());
     }
 }

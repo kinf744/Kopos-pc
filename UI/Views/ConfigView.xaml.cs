@@ -18,6 +18,7 @@ namespace KighmuVpnWindows.UI.Views
         private readonly XrayDnsProfileRepository      _xrayDnsRepo    = new XrayDnsProfileRepository();
         private readonly HttpProxyProfileRepository    _httpProxyRepo  = new HttpProxyProfileRepository();
         private readonly XrayVpnProfileRepository      _xrayVpnRepo    = new XrayVpnProfileRepository();
+        private readonly SshSslProfileRepository       _sshSslRepo     = new SshSslProfileRepository();
 
         // Correspondance index d'onglet -> TunnelMode (sans ZIVPN, retire pour Windows)
         private readonly TunnelMode[] _tabModes = new[]
@@ -85,6 +86,8 @@ namespace KighmuVpnWindows.UI.Views
                 RefreshHttpProxyList();
             else if (_selectedMode == TunnelMode.V2RAY_XRAY)
                 RefreshXrayList();
+            else if (_selectedMode == TunnelMode.SSH_SSL_TLS)
+                LoadSslFields();
 
             // TODO (prochaines etapes) : charger les champs / la liste des autres modes ici
         }
@@ -519,5 +522,51 @@ namespace KighmuVpnWindows.UI.Views
         {
             MessageBox.Show("Enregistrer : sera reconnecte lors de la construction de ce panel.", "A venir");
         }
+        // ── SSH SSL/TLS : formulaire direct (pas de liste de profils) ────────
+        private void LoadSslFields()
+        {
+            var cfg = _sshSslRepo.GetConfig();
+            SslHost.Text            = cfg.SshHost;
+            SslPort.Text            = cfg.SshPort.ToString();
+            SslUser.Text            = cfg.SshUser;
+            SslPass.Password        = cfg.SshPass;
+            SslSni.Text             = cfg.Sni;
+            SslAllowInsecure.IsChecked = cfg.AllowInsecure;
+
+            // Sélection ComboBox TLS
+            SslTlsVersion.SelectedIndex = cfg.TlsVersion switch
+            {
+                "TLS 1.2" => 1,
+                "TLS 1.3" => 2,
+                _         => 0   // "TLS" par défaut
+            };
+        }
+
+        private void BtnSslSave_Click(object sender, RoutedEventArgs e)
+        {
+            if (!int.TryParse(SslPort.Text.Trim(), out int port))
+            {
+                MessageBox.Show("Port invalide. Entrez un nombre entier.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var tlsItem = (SslTlsVersion.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? "TLS";
+
+            var cfg = new SshSslProfile
+            {
+                SshHost      = SslHost.Text.Trim(),
+                SshPort      = port,
+                SshUser      = SslUser.Text.Trim(),
+                SshPass      = SslPass.Password,
+                Sni          = SslSni.Text.Trim(),
+                TlsVersion   = tlsItem,
+                AllowInsecure = SslAllowInsecure.IsChecked == true
+            };
+
+            _sshSslRepo.SaveConfig(cfg);
+            MessageBox.Show("Configuration SSH SSL/TLS enregistrée.", "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+
     }
 }

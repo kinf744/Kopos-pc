@@ -42,6 +42,15 @@
     </Style>
 
     <!-- ===== Spinner / ComboBox (équivalent Widget.KighmuVPN.Spinner) ===== -->
+    <Style x:Key="KighmuPasswordBox" TargetType="PasswordBox" BasedOn="{StaticResource MaterialDesignOutlinedPasswordBox}">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{StaticResource TextHintBrush}"/>
+        <Setter Property="Margin"      Value="0,0,0,0"/>
+        <Setter Property="Padding"     Value="8,6"/>
+        <Setter Property="FontSize"    Value="14"/>
+    </Style>
+
     <Style x:Key="KighmuComboBox" TargetType="ComboBox" BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         <Setter Property="Background" Value="{StaticResource SurfaceDarkElevatedBrush}" />
