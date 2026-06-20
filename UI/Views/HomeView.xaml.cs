@@ -18,6 +18,17 @@ namespace KighmuVpnWindows.UI.Views
             _vpnService.ErrorOccurred += OnError;
             PopulateProfileSelector();
             UpdateUI(_vpnService.Status);
+            Unloaded += HomeView_Unloaded;
+        }
+
+        // Evite la fuite memoire : KighmuVpnService.Instance est un singleton qui
+        // vit toute la session. Sans desabonnement, chaque navigation vers Home
+        // empile un nouveau handler sur le meme service indefiniment.
+        private void HomeView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _vpnService.StatusChanged -= OnStatusChanged;
+            _vpnService.ErrorOccurred -= OnError;
+            Unloaded -= HomeView_Unloaded;
         }
 
         // ── Selecteur de profil ───────────────────────────────────────────────
