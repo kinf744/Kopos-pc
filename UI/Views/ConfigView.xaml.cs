@@ -15,6 +15,7 @@ namespace KighmuVpnWindows.UI.Views
         private TunnelMode _selectedMode;
         private readonly SlowDnsProfileRepository    _slowDnsRepo    = new SlowDnsProfileRepository();
         private readonly HysteriaProfileRepository   _hysteriaRepo   = new HysteriaProfileRepository();
+        private readonly XrayDnsProfileRepository      _xrayDnsRepo    = new XrayDnsProfileRepository();
 
         // Correspondance index d'onglet -> TunnelMode (sans ZIVPN, retire pour Windows)
         private readonly TunnelMode[] _tabModes = new[]
@@ -76,6 +77,8 @@ namespace KighmuVpnWindows.UI.Views
                 RefreshSlowDnsList();
             else if (_selectedMode == TunnelMode.HYSTERIA_UDP)
                 RefreshHysteriaList();
+            else if (_selectedMode == TunnelMode.V2RAY_SLOWDNS)
+                RefreshV2DnsList();
 
             // TODO (prochaines etapes) : charger les champs / la liste des autres modes ici
         }
@@ -246,6 +249,88 @@ namespace KighmuVpnWindows.UI.Views
             {
                 _hysteriaRepo.Add(newProfile);
                 RefreshHysteriaList();
+            });
+        }
+
+        // ── V2Ray+DNS : liste de profils ────────────────────────────────────────
+        private void RefreshV2DnsList()
+        {
+            V2DnsProfilesList.Children.Clear();
+            var profiles = _xrayDnsRepo.GetAll();
+            for (int i = 0; i < profiles.Count; i++)
+                V2DnsProfilesList.Children.Add(BuildV2DnsRow(profiles[i], i));
+        }
+
+        private UIElement BuildV2DnsRow(XrayDnsProfile p, int index)
+        {
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var checkBox = new CheckBox
+            {
+                IsChecked         = p.IsSelected,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin            = new Thickness(0, 0, 8, 0)
+            };
+            checkBox.Checked   += (s, e) => _xrayDnsRepo.UpdateSelection(p.Id, true);
+            checkBox.Unchecked += (s, e) => _xrayDnsRepo.UpdateSelection(p.Id, false);
+            Grid.SetColumn(checkBox, 0);
+
+            var textPanel = new StackPanel();
+            var name = string.IsNullOrWhiteSpace(p.ProfileName) ? $"Profil {index + 1}" : p.ProfileName;
+            textPanel.Children.Add(new TextBlock
+            {
+                Text       = name,
+                Foreground = (Brush)TryFindResource("TextPrimaryBrush") ?? Brushes.White,
+                FontSize   = 14
+            });
+            textPanel.Children.Add(new TextBlock
+            {
+                Text       = $"{p.Protocol}  {p.ServerAddress}:{p.ServerPort}  DNS:{p.DnsServer}",
+                Foreground = (Brush)TryFindResource("TextHintBrush") ?? Brushes.Gray,
+                FontSize   = 11
+            });
+            Grid.SetColumn(textPanel, 1);
+
+            var menu        = new ContextMenu();
+            var editItem    = new MenuItem { Header = "Modifier" };
+            editItem.Click += (s, e) => EditV2DnsProfile(p);
+            var cloneItem    = new MenuItem { Header = "Cloner" };
+            cloneItem.Click += (s, e) => { _xrayDnsRepo.Clone(p.Id); RefreshV2DnsList(); };
+            var deleteItem    = new MenuItem { Header = "Supprimer" };
+            deleteItem.Click += (s, e) =>
+            {
+                if (MessageBox.Show($"Supprimer '{name}' ?", "Confirmation",
+                        MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+                _xrayDnsRepo.Delete(p.Id);
+                RefreshV2DnsList();
+            };
+            menu.Items.Add(editItem);
+            menu.Items.Add(cloneItem);
+            menu.Items.Add(deleteItem);
+            row.ContextMenu = menu;
+
+            row.Children.Add(checkBox);
+            row.Children.Add(textPanel);
+            return row;
+        }
+
+        private void EditV2DnsProfile(XrayDnsProfile p)
+        {
+            XrayDnsProfileEditDialog.Show(Window.GetWindow(this), p, updated =>
+            {
+                _xrayDnsRepo.Update(updated);
+                RefreshV2DnsList();
+            });
+        }
+
+        private void BtnAddV2Dns_Click(object sender, RoutedEventArgs e)
+        {
+            XrayDnsProfileEditDialog.Show(Window.GetWindow(this), null, newProfile =>
+            {
+                _xrayDnsRepo.Add(newProfile);
+                RefreshV2DnsList();
             });
         }
 
