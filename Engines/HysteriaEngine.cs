@@ -50,6 +50,7 @@ namespace KighmuVpnWindows.Engines
                 listener.Stop();
                 return port;
             }
+            }
             catch
             {
                 return 10800; // fallback
