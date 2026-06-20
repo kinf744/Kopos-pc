@@ -171,7 +171,7 @@ namespace KighmuVpnWindows.Engines
 
             KighmuLogger.Info(TAG, $"tun2socks Hysteria -> port={targetPort} ({_activePorts.Count} tunnel(s))");
 
-            // Démarre tun2socks.exe directement (équivalent du HevTun2Socks.start côté Android),
+            // Démarre hev-socks5-tunnel (equivalent du HevTun2Socks.start cote Android),
             // pointé sur le port choisi ci-dessus.
             lock (_enginesLock)
             {

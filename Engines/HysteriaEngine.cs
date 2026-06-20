@@ -15,7 +15,7 @@ namespace KighmuVpnWindows.Engines
     /// <summary>
     /// Équivalent de HysteriaEngine.kt.
     /// Pilote hysteria.exe (build Windows officiel) via Process, au lieu du .so Android.
-    /// Le routage TUN se fait via Wintun + tun2socks.exe (pas de lib native intégrée).
+    /// Le routage TUN se fait via hev-socks5-tunnel (Wintun integre).
     /// </summary>
     public class HysteriaEngine : ITunnelEngine
     {
@@ -183,7 +183,7 @@ namespace KighmuVpnWindows.Engines
         }
 
         /// <summary>
-        /// Démarre tun2socks.exe pour router le trafic de l'adaptateur Wintun
+        /// Démarre hev-socks5-tunnel pour router le trafic de l'adaptateur Wintun
         /// vers le SOCKS5 local (127.0.0.1:_socksPort).
         /// Remplace HevTun2Socks (lib native Android) par un process séparé.
         /// </summary>
