@@ -88,19 +88,8 @@ namespace KighmuVpnWindows.UI.Dialogs
 
             // ── LIEN XRAY ────────────────────────────────────────────────────
             Label("LIEN XRAY (vmess:// / vless:// / trojan://)");
-            layout.Children.Add(new TextBlock
-            {
-                Text         = "Coller le lien puis cliquer Parser pour remplir automatiquement",
-                Foreground   = hintBrush,
-                FontSize     = 10,
-                TextWrapping = TextWrapping.Wrap,
-                Margin       = new Thickness(0, 0, 0, 4)
-            });
 
             // Champ lien + bouton Parser sur la meme ligne
-            var linkRow = new Grid { Margin = new Thickness(0, 0, 0, 4) };
-            linkRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            linkRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var etLink = new TextBox
             {
                 Text            = p.XrayLink,
@@ -109,51 +98,8 @@ namespace KighmuVpnWindows.UI.Dialogs
                 Padding         = new Thickness(8),
                 BorderThickness = new Thickness(0)
             };
-            var btnParse = new Button
-            {
-                Content    = "Parser",
-                Padding    = new Thickness(10, 8, 10, 8),
-                Margin     = new Thickness(6, 0, 0, 0),
-                Background = accentBrush,
-                Foreground = Brushes.White
-            };
-            Grid.SetColumn(etLink,   0);
-            Grid.SetColumn(btnParse, 1);
-            linkRow.Children.Add(etLink);
-            linkRow.Children.Add(btnParse);
-            layout.Children.Add(linkRow);
+            layout.Children.Add(etLink);
 
-            // ── CONFIG XRAY (remplie apres parsing) ──────────────────────────
-            Label("CONFIG XRAY");
-            var etProto  = Field("Protocol (vmess / vless / trojan)", p.Protocol);
-            var etHost   = Field("Server Address", p.ServerAddress);
-            var etPort   = Field("Server Port", p.ServerPort.ToString());
-            var etUuid   = Field("UUID / Password", p.Uuid);
-            var etTrans  = Field("Transport (ws / grpc / tcp / xhttp)", p.Transport);
-            var etPath   = Field("WS Path / gRPC Service", p.WsPath);
-            var etWsHost = Field("WS Host (Host header)", p.WsHost);
-            var cbTls    = CheckField("TLS active", p.Tls);
-            var etSni    = Field("SNI", p.Sni);
-            var cbInsec  = CheckField("Allow Insecure", p.AllowInsecure);
-
-            // Action Parser : remplit les champs automatiquement
-            btnParse.Click += (s, e) =>
-            {
-                var link = etLink.Text.Trim();
-                if (string.IsNullOrWhiteSpace(link)) return;
-                var tmp = new XrayDnsProfile();
-                XrayDnsProfile.ParseLinkIntoProfile(link, tmp);
-                etProto.Text  = tmp.Protocol;
-                etHost.Text   = tmp.ServerAddress;
-                etPort.Text   = tmp.ServerPort.ToString();
-                etUuid.Text   = tmp.Uuid;
-                etTrans.Text  = tmp.Transport;
-                etPath.Text   = tmp.WsPath;
-                etWsHost.Text = tmp.WsHost;
-                cbTls.IsChecked  = tmp.Tls;
-                etSni.Text    = tmp.Sni;
-                cbInsec.IsChecked = tmp.AllowInsecure;
-            };
 
             // ── SLOWDNS TRANSPORT ─────────────────────────────────────────────
             Label("SLOWDNS TRANSPORT");
@@ -215,21 +161,26 @@ namespace KighmuVpnWindows.UI.Dialogs
             btnCancel.Click += (s, e) => window.Close();
             btnSave.Click   += (s, e) =>
             {
+                var link = etLink.Text.Trim();
+                var tmp  = new XrayDnsProfile();
+                if (!string.IsNullOrWhiteSpace(link))
+                    XrayDnsProfile.ParseLinkIntoProfile(link, tmp);
+
                 var updated = new XrayDnsProfile
                 {
                     Id            = p.Id,
                     ProfileName   = string.IsNullOrWhiteSpace(etName.Text) ? "Profil" : etName.Text,
-                    XrayLink      = etLink.Text.Trim(),
-                    Protocol      = string.IsNullOrWhiteSpace(etProto.Text) ? "vmess" : etProto.Text.ToLower().Trim(),
-                    ServerAddress = etHost.Text.Trim(),
-                    ServerPort    = int.TryParse(etPort.Text, out var sp) ? sp : 443,
-                    Uuid          = etUuid.Text.Trim(),
-                    Transport     = string.IsNullOrWhiteSpace(etTrans.Text) ? "ws" : etTrans.Text.ToLower().Trim(),
-                    WsPath        = string.IsNullOrWhiteSpace(etPath.Text) ? "/" : etPath.Text.Trim(),
-                    WsHost        = etWsHost.Text.Trim(),
-                    Tls           = cbTls.IsChecked == true,
-                    Sni           = etSni.Text.Trim(),
-                    AllowInsecure = cbInsec.IsChecked == true,
+                    XrayLink      = link,
+                    Protocol      = string.IsNullOrWhiteSpace(tmp.Protocol) ? "vmess" : tmp.Protocol,
+                    ServerAddress = tmp.ServerAddress,
+                    ServerPort    = tmp.ServerPort > 0 ? tmp.ServerPort : 443,
+                    Uuid          = tmp.Uuid,
+                    Transport     = string.IsNullOrWhiteSpace(tmp.Transport) ? "ws" : tmp.Transport,
+                    WsPath        = string.IsNullOrWhiteSpace(tmp.WsPath) ? "/" : tmp.WsPath,
+                    WsHost        = tmp.WsHost,
+                    Tls           = tmp.Tls,
+                    Sni           = tmp.Sni,
+                    AllowInsecure = tmp.AllowInsecure,
                     DnsServer     = string.IsNullOrWhiteSpace(etDns.Text) ? "8.8.8.8" : etDns.Text.Trim(),
                     Nameserver    = etNs.Text.Trim(),
                     PublicKey     = etPubKey.Text.Trim(),
