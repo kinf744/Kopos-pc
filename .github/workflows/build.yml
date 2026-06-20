@@ -72,12 +72,10 @@ jobs:
           ls -lh publish/
 
       - name: Creer ZIP de distribution
-        shell: bash
+        shell: pwsh
         run: |
-          cd publish
-          zip -r ../KighmuVPN-Windows.zip .
-          cd ..
-          ls -lh KighmuVPN-Windows.zip
+          Compress-Archive -Path publish\* -DestinationPath KighmuVPN-Windows.zip -Force
+          Get-Item KighmuVPN-Windows.zip | Select-Object Name, Length
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
