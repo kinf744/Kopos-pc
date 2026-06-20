@@ -44,10 +44,11 @@ namespace KighmuVpnWindows.Engines
             try
             {
                 var listener = new TcpListener(IPAddress.Loopback, 0);
-                listener.Start();
-                int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-                listener.Stop();
-                return port;
+            listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            return port;
+            }
             catch
             {
                 return 10800; // fallback
