@@ -16,6 +16,7 @@ namespace KighmuVpnWindows.UI.Views
             InitializeComponent();
             _vpnService.StatusChanged += OnStatusChanged;
             _vpnService.ErrorOccurred += OnError;
+            _vpnService.ActiveModeChanged += OnActiveModeChanged;
             PopulateProfileSelector();
             UpdateUI(_vpnService.Status);
             Unloaded += HomeView_Unloaded;
@@ -28,6 +29,7 @@ namespace KighmuVpnWindows.UI.Views
         {
             _vpnService.StatusChanged -= OnStatusChanged;
             _vpnService.ErrorOccurred -= OnError;
+            _vpnService.ActiveModeChanged -= OnActiveModeChanged;
             Unloaded -= HomeView_Unloaded;
         }
 
@@ -75,6 +77,24 @@ namespace KighmuVpnWindows.UI.Views
         private void OnStatusChanged(ConnectionStatus status)
         {
             Dispatcher.Invoke(() => UpdateUI(status));
+        }
+
+        private void OnActiveModeChanged(TunnelMode mode)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                foreach (var obj in ProfileSelector.Items)
+                {
+                    if (obj is ComboBoxItem item && item.Tag is TunnelMode m && m == mode)
+                    {
+                        ProfileSelector.SelectionChanged -= ProfileSelector_SelectionChanged;
+                        ProfileSelector.SelectedItem = item;
+                        ProfileSelector.SelectionChanged += ProfileSelector_SelectionChanged;
+                        break;
+                    }
+                }
+                UpdateUI(_vpnService.Status);
+            });
         }
 
         private void OnError(string message)

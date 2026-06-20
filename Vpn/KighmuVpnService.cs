@@ -31,6 +31,7 @@ namespace KighmuVpnWindows.Vpn
         // ── Evenements UI ─────────────────────────────────────────────────────
         public event Action<ConnectionStatus>? StatusChanged;
         public event Action<string>?           ErrorOccurred;
+        public event Action<TunnelMode>?        ActiveModeChanged;
 
         // ── API publique ──────────────────────────────────────────────────────
 
@@ -140,6 +141,7 @@ namespace KighmuVpnWindows.Vpn
                 await StopTunnel();
             }
             TunnelEngineFactory.SetActiveMode(mode);
+            ActiveModeChanged?.Invoke(mode);
         }
 
         // ── Interne ───────────────────────────────────────────────────────────

@@ -3,55 +3,88 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{StaticResource BackgroundDarkBrush}">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="20">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <TextBlock Text="Configuration du tunnel" FontSize="18" FontWeight="Bold"
-                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16" />
-
-            <!-- ===== Sélecteur de mode ===== -->
-            <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
-                <StackPanel>
-                    <TextBlock Text="MODE DE TUNNEL" Style="{StaticResource KighmuSectionHeader}" />
-                    <ComboBox x:Name="ModeSelector" Style="{StaticResource KighmuComboBox}"
-                              SelectionChanged="ModeSelector_SelectionChanged" Margin="0,4,0,0">
-                        <ComboBoxItem Content="SlowDNS" Tag="0" />
-                        <ComboBoxItem Content="HTTP Proxy" Tag="1" />
-                                         <ComboBoxItem Content="SSH SSL/TLS" Tag="3" />
-                        <ComboBoxItem Content="V2Ray / Xray" Tag="4" />
-                        <ComboBoxItem Content="V2Ray + SlowDNS" Tag="5" />
-                        <ComboBoxItem Content="Hysteria UDP" Tag="6" />
-                    </ComboBox>
-                </StackPanel>
-            </Border>
-
-            <!-- ===== Champs dynamiques selon le mode (remplis en code-behind) ===== -->
-            <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
-                <StackPanel x:Name="DynamicFieldsPanel">
-                    <TextBlock Text="PARAMÈTRES" Style="{StaticResource KighmuSectionHeader}" />
-                    <!-- Les champs (serveur, port, clé SNI, payload, etc.)
-                         sont injectés ici selon le mode sélectionné -->
-                </StackPanel>
-            </Border>
-
-            <!-- ===== Liste des profils enregistrés ===== -->
-            <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
-                <StackPanel>
-                    <TextBlock Text="PROFILS ENREGISTRÉS" Style="{StaticResource KighmuSectionHeader}" />
-                    <ListBox x:Name="ProfilesList" Background="Transparent" BorderThickness="0"
-                             Foreground="{StaticResource TextPrimaryBrush}" Margin="0,4,0,0" />
-                </StackPanel>
-            </Border>
-
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Importer" Style="{StaticResource MaterialDesignOutlinedButton}"
-                        Click="Import_Click" Margin="0,0,8,0" />
-                <Button Content="Exporter" Style="{StaticResource MaterialDesignOutlinedButton}"
-                        Click="Export_Click" Margin="0,0,8,0" />
-                <Button Content="Enregistrer" Style="{StaticResource KighmuButton}"
-                        Click="Save_Click" />
+        <!-- ===== Barre d'onglets (equivalent tab_container Android) ===== -->
+        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled" Padding="16,16,16,0">
+            <StackPanel x:Name="TabBar" Orientation="Horizontal">
+                <Button x:Name="TabSlowDns"  Content="SlowDNS"     Tag="0" Click="Tab_Click" Padding="14,8" Margin="0,0,4,0" />
+                <Button x:Name="TabHttp"     Content="HTTP Proxy"  Tag="1" Click="Tab_Click" Padding="14,8" Margin="0,0,4,0" />
+                <Button x:Name="TabSsl"      Content="SSH SSL"     Tag="2" Click="Tab_Click" Padding="14,8" Margin="0,0,4,0" />
+                <Button x:Name="TabXray"     Content="V2Ray/Xray"  Tag="3" Click="Tab_Click" Padding="14,8" Margin="0,0,4,0" />
+                <Button x:Name="TabV2Dns"    Content="V2Ray+DNS"   Tag="4" Click="Tab_Click" Padding="14,8" Margin="0,0,4,0" />
+                <Button x:Name="TabHysteria" Content="Hysteria"    Tag="5" Click="Tab_Click" Padding="14,8" Margin="0,0,4,0" />
             </StackPanel>
+        </ScrollViewer>
 
-        </StackPanel>
-    </ScrollViewer>
+        <!-- ===== Contenu : un panel squelette par mode (equivalent config_content Android) ===== -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20" x:Name="ConfigContent">
+
+                <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                    <StackPanel x:Name="PanelSlowDns" Visibility="Visible">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="SLOWDNS PROFILES" Style="{StaticResource KighmuSectionHeader}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" x:Name="BtnAddSlowDns" Content="+" Width="32" Height="32" FontSize="18"
+                                    Style="{StaticResource KighmuButton}" Click="BtnAddSlowDns_Click" Padding="0" />
+                        </Grid>
+                        <TextBlock Text="Clic droit sur un profil pour le modifier, cloner ou supprimer"
+                                   Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap" />
+                        <StackPanel x:Name="SlowDnsProfilesList" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                    <StackPanel x:Name="PanelHttp" Visibility="Collapsed">
+                        <TextBlock Text="HTTP PROXY PROFILES" Style="{StaticResource KighmuSectionHeader}" />
+                        <TextBlock Text="(squelette - contenu a venir)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                    <StackPanel x:Name="PanelSsl" Visibility="Collapsed">
+                        <TextBlock Text="SSH SERVER" Style="{StaticResource KighmuSectionHeader}" />
+                        <TextBlock Text="(squelette - profil unique, pas de liste - contenu a venir)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                    <StackPanel x:Name="PanelXray" Visibility="Collapsed">
+                        <TextBlock Text="V2RAY / XRAY" Style="{StaticResource KighmuSectionHeader}" />
+                        <TextBlock Text="(squelette - profil unique, pas de liste - contenu a venir)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                    <StackPanel x:Name="PanelV2Dns" Visibility="Collapsed">
+                        <TextBlock Text="V2RAY+DNS PROFILES" Style="{StaticResource KighmuSectionHeader}" />
+                        <TextBlock Text="(squelette - contenu a venir)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
+                    <StackPanel x:Name="PanelHysteria" Visibility="Collapsed">
+                        <TextBlock Text="HYSTERIA PROFILES" Style="{StaticResource KighmuSectionHeader}" />
+                        <TextBlock Text="(squelette - contenu a venir)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+                    <Button Content="Importer" Style="{StaticResource MaterialDesignOutlinedButton}" Click="Import_Click" Margin="0,0,8,0" />
+                    <Button Content="Exporter" Style="{StaticResource MaterialDesignOutlinedButton}" Click="Export_Click" Margin="0,0,8,0" />
+                    <Button Content="Enregistrer" Style="{StaticResource KighmuButton}" Click="Save_Click" />
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>
