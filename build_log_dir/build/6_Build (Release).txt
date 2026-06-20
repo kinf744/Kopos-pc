@@ -1,0 +1,10 @@
+﻿2026-06-20T19:36:14.0706940Z ##[group]Run dotnet publish KighmuVpnWindows.csproj -c Release -o publish/
+2026-06-20T19:36:14.0707582Z [36;1mdotnet publish KighmuVpnWindows.csproj -c Release -o publish/[0m
+2026-06-20T19:36:14.0767765Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-06-20T19:36:14.0768106Z env:
+2026-06-20T19:36:14.0768308Z   DOTNET_ROOT: C:\Program Files\dotnet
+2026-06-20T19:36:14.0768546Z ##[endgroup]
+2026-06-20T19:36:15.3103875Z   Determining projects to restore...
+2026-06-20T19:36:15.6051474Z   All projects are up-to-date for restore.
+2026-06-20T19:36:16.9053775Z ##[error]D:\a\Kopos-pc\Kopos-pc\UI\Views\ConfigView.xaml(69,51): error MC3072: The property 'PlaceholderText' does not exist in XML namespace 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'. Line 69 Position 51. [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:36:17.3883273Z ##[error]Process completed with exit code 1.

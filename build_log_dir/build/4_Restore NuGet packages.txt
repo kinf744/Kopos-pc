@@ -1,0 +1,8 @@
+﻿2026-06-20T19:36:01.7185051Z ##[group]Run dotnet restore KighmuVpnWindows.csproj
+2026-06-20T19:36:01.7185540Z [36;1mdotnet restore KighmuVpnWindows.csproj[0m
+2026-06-20T19:36:01.7249716Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-06-20T19:36:01.7250077Z env:
+2026-06-20T19:36:01.7250268Z   DOTNET_ROOT: C:\Program Files\dotnet
+2026-06-20T19:36:01.7250497Z ##[endgroup]
+2026-06-20T19:36:08.0892999Z   Determining projects to restore...
+2026-06-20T19:36:11.5608301Z   Restored D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj (in 2.81 sec).

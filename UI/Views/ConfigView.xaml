@@ -66,17 +66,17 @@
 
                         <!-- SSH Host -->
                         <TextBlock Text="Serveur SSH (Host)" Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,2"/>
-                        <TextBox x:Name="SslHost" PlaceholderText="ex: vpn.example.com"
+                        <TextBox x:Name="SslHost"
                                  Style="{StaticResource KighmuTextBox}" Margin="0,0,0,10"/>
 
                         <!-- SSH Port -->
                         <TextBlock Text="Port SSH" Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,2"/>
-                        <TextBox x:Name="SslPort" PlaceholderText="443"
+                        <TextBox x:Name="SslPort"
                                  Style="{StaticResource KighmuTextBox}" Margin="0,0,0,10"/>
 
                         <!-- SSH User -->
                         <TextBlock Text="Nom d'utilisateur SSH" Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,2"/>
-                        <TextBox x:Name="SslUser" PlaceholderText="root"
+                        <TextBox x:Name="SslUser"
                                  Style="{StaticResource KighmuTextBox}" Margin="0,0,0,10"/>
 
                         <!-- SSH Password -->
@@ -85,7 +85,7 @@
 
                         <!-- SNI -->
                         <TextBlock Text="SNI (Server Name Indication)" Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,2"/>
-                        <TextBox x:Name="SslSni" PlaceholderText="ex: cdn.cloudflare.com"
+                        <TextBox x:Name="SslSni"
                                  Style="{StaticResource KighmuTextBox}" Margin="0,0,0,10"/>
 
                         <!-- TLS Version -->
