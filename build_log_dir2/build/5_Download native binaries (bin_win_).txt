@@ -1,0 +1,93 @@
+﻿2026-06-20T19:44:27.5857979Z ##[group]Run mkdir -p bin/win
+2026-06-20T19:44:27.5858370Z [36;1mmkdir -p bin/win[0m
+2026-06-20T19:44:27.5858588Z [36;1m[0m
+2026-06-20T19:44:27.5858758Z [36;1m# xray.exe[0m
+2026-06-20T19:44:27.5861949Z [36;1mcurl -L -H "Authorization: token ***" \[0m
+2026-06-20T19:44:27.5862309Z [36;1m  -H "Accept: application/octet-stream" \[0m
+2026-06-20T19:44:27.5862617Z [36;1m  -o bin/win/xray.exe \[0m
+2026-06-20T19:44:27.5863001Z [36;1m  "https://api.github.com/repos/kinf744/Kopos-pc/releases/assets/451788798"[0m
+2026-06-20T19:44:27.5863384Z [36;1m[0m
+2026-06-20T19:44:27.5863558Z [36;1m# dnstt-client.exe[0m
+2026-06-20T19:44:27.5866534Z [36;1mcurl -L -H "Authorization: token ***" \[0m
+2026-06-20T19:44:27.5866860Z [36;1m  -H "Accept: application/octet-stream" \[0m
+2026-06-20T19:44:27.5867162Z [36;1m  -o bin/win/dnstt-client.exe \[0m
+2026-06-20T19:44:27.5867545Z [36;1m  "https://api.github.com/repos/kinf744/Kopos-pc/releases/assets/451678327"[0m
+2026-06-20T19:44:27.5867922Z [36;1m[0m
+2026-06-20T19:44:27.5868240Z [36;1m# hysteria.exe[0m
+2026-06-20T19:44:27.5871547Z [36;1mcurl -L -H "Authorization: token ***" \[0m
+2026-06-20T19:44:27.5871868Z [36;1m  -H "Accept: application/octet-stream" \[0m
+2026-06-20T19:44:27.5872163Z [36;1m  -o bin/win/hysteria.exe \[0m
+2026-06-20T19:44:27.5872540Z [36;1m  "https://api.github.com/repos/kinf744/Kopos-pc/releases/assets/451681521"[0m
+2026-06-20T19:44:27.5872926Z [36;1m[0m
+2026-06-20T19:44:27.5873156Z [36;1m# hev-socks5-tunnel (tun2socks + wintun inclus)[0m
+2026-06-20T19:44:27.5873475Z [36;1mcurl -L -o hev_win64.zip \[0m
+2026-06-20T19:44:27.5873967Z [36;1m  "https://github.com/heiher/hev-socks5-tunnel/releases/download/2.15.0/hev-socks5-tunnel-win64.zip"[0m
+2026-06-20T19:44:27.5874495Z [36;1munzip -o hev_win64.zip -d hev_tmp/[0m
+2026-06-20T19:44:27.5874897Z [36;1mmv hev_tmp/hev-socks5-tunnel/hev-socks5-tunnel.exe bin/win/tun2socks.exe[0m
+2026-06-20T19:44:27.5875409Z [36;1mmv hev_tmp/hev-socks5-tunnel/wintun.dll            bin/win/wintun.dll[0m
+2026-06-20T19:44:27.5875906Z [36;1mmv hev_tmp/hev-socks5-tunnel/msys-2.0.dll          bin/win/msys-2.0.dll[0m
+2026-06-20T19:44:27.5876308Z [36;1mrm -rf hev_win64.zip hev_tmp/[0m
+2026-06-20T19:44:27.5876538Z [36;1m[0m
+2026-06-20T19:44:27.5876709Z [36;1mecho "=== Contenu bin/win/ ==="[0m
+2026-06-20T19:44:27.5877176Z [36;1mls -lh bin/win/[0m
+2026-06-20T19:44:27.5890591Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-06-20T19:44:27.5891039Z env:
+2026-06-20T19:44:27.5891247Z   DOTNET_ROOT: C:\Program Files\dotnet
+2026-06-20T19:44:27.5891499Z ##[endgroup]
+2026-06-20T19:44:27.6718908Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+2026-06-20T19:44:27.6719735Z                                  Dload  Upload  Total   Spent   Left   Speed
+2026-06-20T19:44:27.6720394Z 
+2026-06-20T19:44:27.8356281Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:27.8357330Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:27.8359327Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:27.8365618Z 
+2026-06-20T19:44:28.1494365Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.1496540Z 100 33.07M 100 33.07M   0      0 69.14M      0                              0
+2026-06-20T19:44:28.1497424Z 100 33.07M 100 33.07M   0      0 69.11M      0                              0
+2026-06-20T19:44:28.1498802Z 100 33.07M 100 33.07M   0      0 69.09M      0                              0
+2026-06-20T19:44:28.1860366Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+2026-06-20T19:44:28.1861826Z                                  Dload  Upload  Total   Spent   Left   Speed
+2026-06-20T19:44:28.1862238Z 
+2026-06-20T19:44:28.3458025Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.3461962Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.3462615Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.3468321Z 
+2026-06-20T19:44:28.3912809Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.3913877Z 100  8.99M 100  8.99M   0      0 43.68M      0                              0
+2026-06-20T19:44:28.3915042Z 100  8.99M 100  8.99M   0      0 43.66M      0                              0
+2026-06-20T19:44:28.3916063Z 100  8.99M 100  8.99M   0      0 43.61M      0                              0
+2026-06-20T19:44:28.4192734Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+2026-06-20T19:44:28.4193598Z                                  Dload  Upload  Total   Spent   Left   Speed
+2026-06-20T19:44:28.4194239Z 
+2026-06-20T19:44:28.5449117Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.5449840Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.5450446Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.5456722Z 
+2026-06-20T19:44:28.6625132Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.6626348Z 100 19.24M 100 19.24M   0      0 78.85M      0                              0
+2026-06-20T19:44:28.6628565Z 100 19.24M 100 19.24M   0      0 78.78M      0                              0
+2026-06-20T19:44:28.6629380Z 100 19.24M 100 19.24M   0      0 78.72M      0                              0
+2026-06-20T19:44:28.6908066Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+2026-06-20T19:44:28.6909650Z                                  Dload  Upload  Total   Spent   Left   Speed
+2026-06-20T19:44:28.6910199Z 
+2026-06-20T19:44:28.7875505Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.7877100Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.7878208Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.7884324Z 
+2026-06-20T19:44:28.8542663Z   0      0   0      0   0      0      0      0                              0
+2026-06-20T19:44:28.8545302Z 100  1.53M 100  1.53M   0      0  9.30M      0                              0
+2026-06-20T19:44:28.8546107Z 100  1.53M 100  1.53M   0      0  9.29M      0                              0
+2026-06-20T19:44:28.8547266Z 100  1.53M 100  1.53M   0      0  9.29M      0                              0
+2026-06-20T19:44:28.8849000Z Archive:  hev_win64.zip
+2026-06-20T19:44:28.8854955Z    creating: hev_tmp/hev-socks5-tunnel/
+2026-06-20T19:44:28.8894496Z   inflating: hev_tmp/hev-socks5-tunnel/hev-socks5-tunnel.exe  
+2026-06-20T19:44:28.9183181Z   inflating: hev_tmp/hev-socks5-tunnel/msys-2.0.dll  
+2026-06-20T19:44:28.9228864Z   inflating: hev_tmp/hev-socks5-tunnel/wintun.dll  
+2026-06-20T19:44:29.0004401Z === Contenu bin/win/ ===
+2026-06-20T19:44:29.0202297Z total 66M
+2026-06-20T19:44:29.0203257Z -rwxr-xr-x 1 runneradmin 197121 9.0M Jun 20 19:44 dnstt-client.exe
+2026-06-20T19:44:29.0203757Z -rwxr-xr-x 1 runneradmin 197121  20M Jun 20 19:44 hysteria.exe
+2026-06-20T19:44:29.0204204Z -rwxr-xr-x 1 runneradmin 197121 3.3M May  2 15:22 msys-2.0.dll
+2026-06-20T19:44:29.0204651Z -rwxr-xr-x 1 runneradmin 197121 302K May 10 09:50 tun2socks.exe
+2026-06-20T19:44:29.0205256Z -rwxr-xr-x 1 runneradmin 197121 418K May 10 09:50 wintun.dll
+2026-06-20T19:44:29.0205661Z -rwxr-xr-x 1 runneradmin 197121  34M Jun 20 19:44 xray.exe

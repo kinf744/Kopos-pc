@@ -1,0 +1,60 @@
+﻿2026-06-20T19:44:06.8522982Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-06-20T19:44:06.8532174Z ##[group]Run actions/checkout@v4
+2026-06-20T19:44:06.8532954Z with:
+2026-06-20T19:44:06.8533427Z   repository: kinf744/Kopos-pc
+2026-06-20T19:44:06.8537979Z   token: ***
+2026-06-20T19:44:06.8538409Z   ssh-strict: true
+2026-06-20T19:44:06.8538847Z   ssh-user: git
+2026-06-20T19:44:06.8539298Z   persist-credentials: true
+2026-06-20T19:44:06.8539783Z   clean: true
+2026-06-20T19:44:06.8540523Z   sparse-checkout-cone-mode: true
+2026-06-20T19:44:06.8541102Z   fetch-depth: 1
+2026-06-20T19:44:06.8541734Z   fetch-tags: false
+2026-06-20T19:44:06.8542322Z   show-progress: true
+2026-06-20T19:44:06.8542805Z   lfs: false
+2026-06-20T19:44:06.8543222Z   submodules: false
+2026-06-20T19:44:06.8543707Z   set-safe-directory: true
+2026-06-20T19:44:06.8544484Z ##[endgroup]
+2026-06-20T19:44:06.9996750Z Syncing repository: kinf744/Kopos-pc
+2026-06-20T19:44:06.9998537Z ##[group]Getting Git version info
+2026-06-20T19:44:06.9999183Z Working directory is 'D:\a\Kopos-pc\Kopos-pc'
+2026-06-20T19:44:07.0769170Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-06-20T19:44:07.2181105Z git version 2.54.0.windows.1
+2026-06-20T19:44:07.2230741Z ##[endgroup]
+2026-06-20T19:44:07.2251453Z Temporarily overriding HOME='D:\a\_temp\eaccfe8d-c2ac-4f3e-a482-878743eaccb7' before making global git config changes
+2026-06-20T19:44:07.2252786Z Adding repository directory to the temporary git global config as a safe directory
+2026-06-20T19:44:07.2261983Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Kopos-pc\Kopos-pc
+2026-06-20T19:44:07.2557041Z Deleting the contents of 'D:\a\Kopos-pc\Kopos-pc'
+2026-06-20T19:44:07.2563280Z ##[group]Initializing the repository
+2026-06-20T19:44:07.2571724Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\Kopos-pc\Kopos-pc
+2026-06-20T19:44:07.2987793Z Initialized empty Git repository in D:/a/Kopos-pc/Kopos-pc/.git/
+2026-06-20T19:44:07.3030625Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/kinf744/Kopos-pc
+2026-06-20T19:44:07.3343074Z ##[endgroup]
+2026-06-20T19:44:07.3343862Z ##[group]Disabling automatic garbage collection
+2026-06-20T19:44:07.3352155Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-06-20T19:44:07.3634741Z ##[endgroup]
+2026-06-20T19:44:07.3635486Z ##[group]Setting up auth
+2026-06-20T19:44:07.3645988Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-06-20T19:44:07.3932619Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-06-20T19:44:08.2535548Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-06-20T19:44:08.2836865Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-06-20T19:44:08.8548261Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-06-20T19:44:08.8883591Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-06-20T19:44:09.4186922Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-06-20T19:44:09.4488569Z ##[endgroup]
+2026-06-20T19:44:09.4489520Z ##[group]Fetching the repository
+2026-06-20T19:44:09.4501451Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f04357919ed392f1e5e5416f8370d5f12f0316f8:refs/remotes/origin/main
+2026-06-20T19:44:10.0864888Z From https://github.com/kinf744/Kopos-pc
+2026-06-20T19:44:10.0865904Z  * [new ref]         f04357919ed392f1e5e5416f8370d5f12f0316f8 -> origin/main
+2026-06-20T19:44:10.1057968Z ##[endgroup]
+2026-06-20T19:44:10.1059124Z ##[group]Determining the checkout info
+2026-06-20T19:44:10.1061248Z ##[endgroup]
+2026-06-20T19:44:10.1075899Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-06-20T19:44:10.1411381Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-06-20T19:44:10.1697741Z ##[group]Checking out the ref
+2026-06-20T19:44:10.1706798Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-06-20T19:44:10.2409698Z Switched to a new branch 'main'
+2026-06-20T19:44:10.2426825Z branch 'main' set up to track 'origin/main'.
+2026-06-20T19:44:10.2469552Z ##[endgroup]
+2026-06-20T19:44:10.2778545Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-06-20T19:44:10.3032251Z f04357919ed392f1e5e5416f8370d5f12f0316f8

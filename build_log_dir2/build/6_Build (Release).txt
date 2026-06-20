@@ -1,0 +1,24 @@
+﻿2026-06-20T19:44:29.0390742Z ##[group]Run dotnet publish KighmuVpnWindows.csproj -c Release -o publish/
+2026-06-20T19:44:29.0391378Z [36;1mdotnet publish KighmuVpnWindows.csproj -c Release -o publish/[0m
+2026-06-20T19:44:29.0449248Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-06-20T19:44:29.0449594Z env:
+2026-06-20T19:44:29.0449778Z   DOTNET_ROOT: C:\Program Files\dotnet
+2026-06-20T19:44:29.0450021Z ##[endgroup]
+2026-06-20T19:44:30.3698270Z   Determining projects to restore...
+2026-06-20T19:44:30.6192413Z   All projects are up-to-date for restore.
+2026-06-20T19:44:36.2646683Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Config\ConfigImport.cs(55,32): warning CS8604: Possible null reference argument for parameter 'configToken' in 'void ConfigImport.ImportProfiles(JToken configToken)'. [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2657240Z ##[error]D:\a\Kopos-pc\Kopos-pc\Config\ConfigManager.cs(38,91): error CS1061: 'SshSslProfileRepository' does not contain a definition for 'GetAll' and no accessible extension method 'GetAll' accepting a first argument of type 'SshSslProfileRepository' could be found (are you missing a using directive or an assembly reference?) [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2661789Z ##[error]D:\a\Kopos-pc\Kopos-pc\Config\ConfigManager.cs(68,43): error CS1061: 'SshSslProfileRepository' does not contain a definition for 'DeleteAll' and no accessible extension method 'DeleteAll' accepting a first argument of type 'SshSslProfileRepository' could be found (are you missing a using directive or an assembly reference?) [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2666665Z ##[error]D:\a\Kopos-pc\Kopos-pc\Config\ConfigImport.cs(93,55): error CS1061: 'SshSslProfileRepository' does not contain a definition for 'Add' and no accessible extension method 'Add' accepting a first argument of type 'SshSslProfileRepository' could be found (are you missing a using directive or an assembly reference?) [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2670178Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Engines\HttpProxyEngine.cs(241,25): warning CS0618: 'BaseClient.SendKeepAlive()' is obsolete: 'Use KeepAliveInterval to send a keep-alive message at regular intervals.' [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2672980Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Engines\SlowDnsEngine.cs(238,25): warning CS0618: 'BaseClient.SendKeepAlive()' is obsolete: 'Use KeepAliveInterval to send a keep-alive message at regular intervals.' [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2675243Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Engines\XrayVpnEngine.cs(282,52): warning CS8602: Dereference of a possibly null reference. [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2679849Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Engines\SshSslEngine.cs(222,25): warning CS0618: 'BaseClient.SendKeepAlive()' is obsolete: 'Use KeepAliveInterval to send a keep-alive message at regular intervals.' [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2684763Z ##[error]D:\a\Kopos-pc\Kopos-pc\Engines\TunnelEngineFactory.cs(103,32): error CS1061: 'SshSslProfileRepository' does not contain a definition for 'GetActive' and no accessible extension method 'GetActive' accepting a first argument of type 'SshSslProfileRepository' could be found (are you missing a using directive or an assembly reference?) [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2687653Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Engines\XrayDnsEngine.cs(359,52): warning CS8602: Dereference of a possibly null reference. [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2689870Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Profiles\XrayVpnProfile.cs(109,71): warning CS8602: Dereference of a possibly null reference. [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2691825Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Profiles\XrayVpnProfile.cs(197,62): warning CS8602: Dereference of a possibly null reference. [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2696783Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Profiles\XrayVpnProfile.cs(199,61): warning CS8602: Dereference of a possibly null reference. [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2698763Z ##[warning]D:\a\Kopos-pc\Kopos-pc\Profiles\XrayDnsProfile.cs(63,71): warning CS8602: Dereference of a possibly null reference. [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.2702907Z ##[warning]D:\a\Kopos-pc\Kopos-pc\UI\Dialogs\XrayVpnProfileEditDialog.cs(77,22): warning CS8321: The local function 'CheckField' is declared but never used [D:\a\Kopos-pc\Kopos-pc\KighmuVpnWindows.csproj]
+2026-06-20T19:44:36.7079552Z ##[error]Process completed with exit code 1.
