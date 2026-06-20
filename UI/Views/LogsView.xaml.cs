@@ -1,3 +1,5 @@
+using KighmuVpnWindows.Utils;
+using System;
 using System.Windows.Controls;
 
 namespace KighmuVpnWindows.UI.Views
@@ -7,12 +9,15 @@ namespace KighmuVpnWindows.UI.Views
         public LogsView()
         {
             InitializeComponent();
+            KighmuLogger.OnLogLine += OnLogLine;
         }
 
-        // TODO: brancher sur Utils/KighmuLogger.cs pour afficher les logs en temps réel
-        public void AppendLog(string line)
+        private void OnLogLine(string line)
         {
-            LogOutput.Text += "\n" + line;
+            Dispatcher.Invoke(() =>
+            {
+                LogOutput.Text += "\n" + line;
+            });
         }
     }
 }
