@@ -65,7 +65,7 @@ namespace KighmuVpnWindows.Vpn
 
                 // 4. Configurer le routage systeme Windows (force tout le trafic -> tunnel)
                 await Task.Delay(800);
-                bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER);
+                bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER, dnsServer: "198.18.0.1");
                 if (!routesOk)
                     throw new Exception("Impossible de configurer le routage systeme (verifiez les droits administrateur).");
 
