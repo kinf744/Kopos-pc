@@ -50,6 +50,7 @@
     <SolidColorBrush x:Key="WarningOrangeBrush" Color="{StaticResource WarningOrangeColor}"/>
     <SolidColorBrush x:Key="InfoBlueBrush" Color="{StaticResource InfoBlueColor}"/>
 
+    <SolidColorBrush x:Key="AccentRedBrush" Color="{StaticResource ErrorRedColor}"/>
     <SolidColorBrush x:Key="NavActiveBrush" Color="{StaticResource NavActiveColor}"/>
     <SolidColorBrush x:Key="NavInactiveBrush" Color="{StaticResource NavInactiveColor}"/>
 
