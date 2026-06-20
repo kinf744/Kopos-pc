@@ -196,38 +196,7 @@ namespace KighmuVpnWindows.Engines
         /// </summary>
         public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
-            try
-            {
-                string binary = GetBinaryPath("tun2socks.exe");
-                if (!File.Exists(binary))
-                {
-                    KighmuLogger.Error(TAG, "ERREUR: tun2socks.exe introuvable");
-                    return;
-                }
-
-                KighmuLogger.Info(TAG, $"Démarrage tun2socks adapter={tunAdapterName} port={targetPort}");
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = binary,
-                    Arguments = $"-device wintun://{tunAdapterName} -proxy socks5://127.0.0.1:{targetPort}",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
-
-                _tun2socksProcess = new Process { StartInfo = psi };
-                _tun2socksProcess.OutputDataReceived += (s, e) => { if (e.Data != null) KighmuLogger.Info("tun2socks", e.Data); };
-                _tun2socksProcess.Start();
-                _tun2socksProcess.BeginOutputReadLine();
-
-                KighmuLogger.Info(TAG, "tun2socks démarré avec succès ✅");
-            }
-            catch (Exception ex)
-            {
-                KighmuLogger.Error(TAG, $"Erreur tun2socks: {ex.Message}");
-            }
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG);
         }
 
         public async Task Stop()

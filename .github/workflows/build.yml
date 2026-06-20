@@ -49,15 +49,14 @@ jobs:
                -o bin/win/hysteria.exe \
                "https://api.github.com/repos/kinf744/Kopos-pc/releases/assets/451681521"
 
-          # tun2socks.exe (source officielle)
-          curl -L -o bin/win/tun2socks.exe \
-               "https://github.com/xjasonlyu/tun2socks/releases/latest/download/tun2socks-windows-amd64.exe"
-
-          # wintun.dll (driver TUN Windows)
-          curl -L -o wintun.zip "https://www.wintun.net/builds/wintun-0.14.1.zip"
-          unzip -o wintun.zip "wintun/bin/amd64/wintun.dll" -d wintun_tmp/
-          mv wintun_tmp/wintun/bin/amd64/wintun.dll bin/win/wintun.dll
-          rm -rf wintun.zip wintun_tmp/
+          # hev-socks5-tunnel (tun2socks + wintun inclus)
+          curl -L -o hev_win64.zip \
+               "https://github.com/heiher/hev-socks5-tunnel/releases/download/2.15.0/hev-socks5-tunnel-win64.zip"
+          unzip -o hev_win64.zip -d hev_tmp/
+          mv hev_tmp/hev-socks5-tunnel/hev-socks5-tunnel.exe bin/win/tun2socks.exe
+          mv hev_tmp/hev-socks5-tunnel/wintun.dll            bin/win/wintun.dll
+          mv hev_tmp/hev-socks5-tunnel/msys-2.0.dll          bin/win/msys-2.0.dll
+          rm -rf hev_win64.zip hev_tmp/
 
           echo "=== Contenu bin/win/ ==="
           ls -lh bin/win/
