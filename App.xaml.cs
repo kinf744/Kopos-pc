@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -20,7 +21,6 @@ namespace KighmuVpnWindows
             Log($"Dir: {Environment.CurrentDirectory}");
             Log($"64bit: {Environment.Is64BitProcess}");
 
-            // Capturer toutes les exceptions non gerees
             AppDomain.CurrentDomain.UnhandledException += (s, ex) =>
             {
                 string msg = ex.ExceptionObject?.ToString() ?? "Erreur inconnue";
@@ -41,9 +41,39 @@ namespace KighmuVpnWindows
             AppDomain.CurrentDomain.FirstChanceException += (s, ex) =>
             {
                 Log($"[FirstChance] {ex.Exception?.GetType().Name}: {ex.Exception?.Message}");
+                if (ex.Exception?.InnerException != null)
+                    Log($"[FirstChance Inner] {ex.Exception.InnerException.GetType().Name}: {ex.Exception.InnerException.Message}");
             };
 
             Log("Gestionnaires erreur installes");
+
+            // Verifier les DLLs presentes
+            Log("=== Verification DLLs ===");
+            string dir = Environment.CurrentDirectory;
+            foreach (var dll in new[] {
+                "MaterialDesignThemes.Wpf.dll",
+                "MaterialDesignColors.dll",
+                "Newtonsoft.Json.dll",
+                "Renci.SshNet.dll",
+                "Microsoft.Xaml.Behaviors.dll"
+            })
+            {
+                string path = Path.Combine(dir, dll);
+                Log($"  {dll}: {(File.Exists(path) ? "PRESENT" : "MANQUANT")}");
+            }
+
+            // Verifier dossier bin/win
+            Log("=== Verification bin/win ===");
+            string binDir = Path.Combine(dir, "bin", "win");
+            if (Directory.Exists(binDir))
+            {
+                foreach (var f in Directory.GetFiles(binDir))
+                    Log($"  bin/win/{Path.GetFileName(f)}");
+            }
+            else
+            {
+                Log("  DOSSIER bin/win MANQUANT !");
+            }
 
             try
             {
@@ -53,8 +83,34 @@ namespace KighmuVpnWindows
             }
             catch (Exception ex)
             {
-                Log($"CRASH OnStartup: {ex}");
+                Log($"CRASH base.OnStartup: {ex}");
                 MessageBox.Show(ex.ToString(), "Crash OnStartup", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                Log("Chargement ressources App.xaml...");
+                var brush = Resources["MaterialDesignPaper"];
+                Log($"MaterialDesignPaper: {brush ?? "NULL"}");
+            }
+            catch (Exception ex)
+            {
+                Log($"CRASH ressources: {ex}");
+            }
+
+            try
+            {
+                Log("Creation MainWindow...");
+                var win = new MainWindow();
+                Log("MainWindow creee OK");
+                win.Show();
+                Log("MainWindow.Show() OK");
+            }
+            catch (Exception ex)
+            {
+                Log($"CRASH MainWindow: {ex}");
+                MessageBox.Show(ex.ToString(), "Crash MainWindow", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
             Log("OnStartup termine");
