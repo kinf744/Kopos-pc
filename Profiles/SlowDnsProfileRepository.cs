@@ -64,5 +64,13 @@ namespace KighmuVpnWindows.Profiles
             var profile = list.FirstOrDefault(p => p.Id == id);
             if (profile != null) { profile.IsSelected = selected; Save(list); }
         }
+
+        public void SetSelected(string id, bool selected)
+        {
+            var list = GetAll();
+            foreach (var p in list)
+                if (p.Id == id) p.IsSelected = selected;
+            SaveAll(list);
+        }
     }
 }
