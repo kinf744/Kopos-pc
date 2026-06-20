@@ -29,13 +29,20 @@ namespace KighmuVpnWindows.Utils
                 {
                     if (!File.Exists(LogFile)) return Array.Empty<string>();
                     var allLines = File.ReadAllLines(LogFile);
-                    return allLines.Length <= maxLines ? allLines : allLines[^maxLines..];
+                    return allLines.Length <= maxLines ? allLines : GetLast(allLines, maxLines);
                 }
                 catch
                 {
                     return Array.Empty<string>();
                 }
             }
+        }
+
+        private static string[] GetLast(string[] arr, int count)
+        {
+            var result = new string[count];
+            Array.Copy(arr, arr.Length - count, result, 0, count);
+            return result;
         }
 
         public static void Info(string tag, string message) => Write("INFO", tag, message);

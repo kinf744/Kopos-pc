@@ -94,7 +94,7 @@ namespace KighmuVpnWindows.Engines
         {
             try
             {
-                process?.Kill(true);
+                process?.Kill();
                 KighmuLogger.Info(TAG, "hev-socks5-tunnel arrete");
             }
             catch (Exception ex)

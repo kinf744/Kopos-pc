@@ -43,7 +43,8 @@ namespace KighmuVpnWindows.Engines
         {
             try
             {
-                using var listener = new TcpListener(IPAddress.Loopback, 0);
+                using (var listener = new TcpListener(IPAddress.Loopback, 0))
+            {
                 listener.Start();
                 int port = ((IPEndPoint)listener.LocalEndpoint).Port;
                 listener.Stop();
@@ -207,8 +208,8 @@ namespace KighmuVpnWindows.Engines
 
             await Task.Run(() =>
             {
-                try { _tun2socksProcess?.Kill(true); } catch { /* ignore */ }
-                try { _hysteriaProcess?.Kill(true); } catch { /* ignore */ }
+                try { _tun2socksProcess?.Kill(); } catch { /* ignore */ }
+                try { _hysteriaProcess?.Kill(); } catch { /* ignore */ }
             });
 
             _tun2socksProcess = null;

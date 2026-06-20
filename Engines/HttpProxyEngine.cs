@@ -338,7 +338,7 @@ namespace KighmuVpnWindows.Engines
             try { _cts?.Cancel(); } catch { }
             await Task.Run(() =>
             {
-                try { _tun2socksProcess?.Kill(true); } catch { }
+                try { _tun2socksProcess?.Kill(); } catch { }
                 try { _forwardedPort?.Stop(); }        catch { }
                 try { _sshClient?.Disconnect(); _sshClient?.Dispose(); } catch { }
                 try { _proxyTcpClient?.Close(); }      catch { }

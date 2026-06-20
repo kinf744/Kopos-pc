@@ -99,7 +99,7 @@ namespace KighmuVpnWindows.Vpn
                 RedirectStandardError = true,
                 CreateNoWindow = true
             };
-            using var p = Process.Start(psi);
+            var p = Process.Start(psi);
             string stdout = p!.StandardOutput.ReadToEnd();
             string stderr = p.StandardError.ReadToEnd();
             p.WaitForExit();
@@ -117,7 +117,7 @@ namespace KighmuVpnWindows.Vpn
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
             };
-            using var p = Process.Start(psi);
+            var p = Process.Start(psi);
             string output = p!.StandardOutput.ReadToEnd();
             p.WaitForExit();
             return output;

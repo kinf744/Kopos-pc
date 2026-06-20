@@ -116,7 +116,7 @@ namespace KighmuVpnWindows.Engines
                     waited += 200;
                     try
                     {
-                        using var sock = new TcpClient();
+                        var sock = new TcpClient();
                         var connectTask = sock.ConnectAsync(IPAddress.Loopback, DnsttPort);
                         if (await Task.WhenAny(connectTask, Task.Delay(100)) == connectTask)
                         {
@@ -258,7 +258,7 @@ namespace KighmuVpnWindows.Engines
                     bool alive;
                     try
                     {
-                        using var s = new TcpClient();
+                        var s = new TcpClient();
                         var connectTask = s.ConnectAsync(IPAddress.Loopback, DnsttPort);
                         alive = await Task.WhenAny(connectTask, Task.Delay(1000)) == connectTask && s.Connected;
                     }
@@ -293,7 +293,7 @@ namespace KighmuVpnWindows.Engines
         /// <summary>Arrêter seulement dnstt - force nouveau port au prochain démarrage</summary>
         public void StopDnsttOnly()
         {
-            try { _dnsttProcess?.Kill(true); } catch { /* ignore */ }
+            try { _dnsttProcess?.Kill(); } catch { /* ignore */ }
             _dnsttProcess = null;
             _dnsttPort = 0;
         }
@@ -315,10 +315,10 @@ namespace KighmuVpnWindows.Engines
 
             await Task.Run(() =>
             {
-                try { _tun2socksProcess?.Kill(true); } catch { /* ignore */ }
+                try { _tun2socksProcess?.Kill(); } catch { /* ignore */ }
                 try { _forwardedPort?.Stop(); } catch { /* ignore */ }
                 try { _sshClient?.Disconnect(); _sshClient?.Dispose(); } catch { /* ignore */ }
-                try { _dnsttProcess?.Kill(true); } catch { /* ignore */ }
+                try { _dnsttProcess?.Kill(); } catch { /* ignore */ }
             });
 
             _tun2socksProcess = null;

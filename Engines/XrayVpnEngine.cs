@@ -89,7 +89,7 @@ namespace KighmuVpnWindows.Engines
                 await Task.Delay(200);
                 try
                 {
-                    using var s = new TcpClient();
+                    var s = new TcpClient();
                     var t = s.ConnectAsync("127.0.0.1", SocksPort);
                     if (await Task.WhenAny(t, Task.Delay(200)) == t && s.Connected)
                         ready = true;
@@ -304,11 +304,11 @@ namespace KighmuVpnWindows.Engines
             _running = false;
             await Task.Run(() =>
             {
-                try { _tun2socksProcess?.Kill(true); } catch { }
+                try { _tun2socksProcess?.Kill(); } catch { }
                 try
                 {
                     _xrayProcess?.StandardInput.Close();
-                    _xrayProcess?.Kill(true);
+                    _xrayProcess?.Kill();
                 } catch { }
             });
             _tun2socksProcess = null;

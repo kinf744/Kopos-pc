@@ -69,7 +69,7 @@ namespace KighmuVpnWindows.Engines
             await Task.Delay(500);
 
             // Calcul du total de flux (profils x tunnelCount chacun)
-            int totalFlux = selected.Sum(p => Math.Clamp(p.TunnelCount, 1, 4));
+            int totalFlux = selected.Sum(p => Math.Max(1, Math.Min(4, p.TunnelCount)));
             KighmuLogger.Info(TAG, $"=== STEP 1: Connexion sequentielle {totalFlux} flux ({selected.Count} profil(s)) ===");
 
             const int MAX_RETRIES = 30;
@@ -80,7 +80,7 @@ namespace KighmuVpnWindows.Engines
 
             foreach (var profile in selected)
             {
-                int count = Math.Clamp(profile.TunnelCount, 1, 4);
+                int count = Math.Max(1, Math.Min(4, profile.TunnelCount));
                 KighmuLogger.Info(TAG, $"Profil '{profile.ProfileName}' -> {count} flux paralleles");
 
                 for (int fluxIdx = 0; fluxIdx < count; fluxIdx++)
@@ -146,7 +146,7 @@ namespace KighmuVpnWindows.Engines
             {
                 try
                 {
-                    using var sock = new TcpClient();
+                    var sock = new TcpClient();
                     var connectTask = sock.ConnectAsync(IPAddress.Loopback, port);
                     if (await Task.WhenAny(connectTask, Task.Delay(1000)) != connectTask || !sock.Connected)
                     {
@@ -176,7 +176,7 @@ namespace KighmuVpnWindows.Engines
             await Task.Delay(200);
             try
             {
-                using var sock = new TcpClient();
+                var sock = new TcpClient();
                 var connectTask = sock.ConnectAsync(IPAddress.Loopback, _activePort);
                 if (await Task.WhenAny(connectTask, Task.Delay(1000)) != connectTask || !sock.Connected)
                     KighmuLogger.Error(TAG, $"Balancer port {_activePort}: INACCESSIBLE");

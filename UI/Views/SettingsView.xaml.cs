@@ -50,7 +50,7 @@ namespace KighmuVpnWindows.UI.Views
         {
             const string RUN_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
             const string APP_NAME = "KighmuVPN";
-            using var key = Registry.CurrentUser.OpenSubKey(RUN_KEY, writable: true);
+            var key = Registry.CurrentUser.OpenSubKey(RUN_KEY, writable: true);
             if (key == null) return;
             if (enable)
             {

@@ -246,14 +246,12 @@ namespace KighmuVpnWindows.Engines
 
             string sni = string.IsNullOrWhiteSpace(_sslConfig.Sni) ? host : _sslConfig.Sni;
 
-            var tlsOptions = new SslClientAuthenticationOptions
-            {
-                TargetHost                          = sni,
-                EnabledSslProtocols                 = SslProtocols.Tls12 | SslProtocols.Tls13,
-                RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true
-            };
-
-            await sslStream.AuthenticateAsClientAsync(tlsOptions);
+            await sslStream.AuthenticateAsClientAsync(
+                sni,
+                null,
+                System.Security.Authentication.SslProtocols.Tls12,
+                false
+            );
             return sslStream;
         }
 
@@ -288,7 +286,7 @@ namespace KighmuVpnWindows.Engines
             try { _cts?.Cancel(); } catch { }
             await Task.Run(() =>
             {
-                try { _tun2socksProcess?.Kill(true); } catch { }
+                try { _tun2socksProcess?.Kill(); } catch { }
                 try { _forwardedPort?.Stop(); }        catch { }
                 try { _sshClient?.Disconnect(); _sshClient?.Dispose(); } catch { }
                 try { _sslStream?.Close(); }           catch { }
