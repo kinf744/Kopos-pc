@@ -19,7 +19,7 @@
                 BorderThickness="0,0,0,1" BorderBrush="{StaticResource SurfaceDarkElevatedBrush}"
                 Padding="16,8">
             <Grid>
-                <TextBlock Text="KIGHMU VPN" FontSize="16" FontWeight="Bold"
+                <TextBlock FontSize="16" FontWeight="Bold"
                            VerticalAlignment="Center">
                     <TextBlock.Inlines>
                         <Run Text="KIGHMU " Foreground="{StaticResource TextPrimaryBrush}" />
