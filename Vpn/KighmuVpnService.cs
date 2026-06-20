@@ -62,6 +62,12 @@ namespace KighmuVpnWindows.Vpn
                 _engine.StartTun2Socks(TUN_ADAPTER);
                 KighmuLogger.Info(TAG, $"tun2socks demarre sur adaptateur [{TUN_ADAPTER}]");
 
+                // 4. Configurer le routage systeme Windows (force tout le trafic -> tunnel)
+                await Task.Delay(800);
+                bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER);
+                if (!routesOk)
+                    throw new Exception("Impossible de configurer le routage systeme (verifiez les droits administrateur).");
+
                 SetStatus(ConnectionStatus.CONNECTED);
                 KighmuLogger.Info(TAG, "Tunnel actif !");
             }
@@ -93,6 +99,8 @@ namespace KighmuVpnWindows.Vpn
                     _engine = null;
                     KighmuLogger.Info(TAG, "Engine arrete");
                 }
+
+                RouteManager.RemoveRoutes();
             }
             catch (Exception ex)
             {
