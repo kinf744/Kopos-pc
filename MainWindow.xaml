@@ -27,13 +27,13 @@
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="0" Click="NavHome_Click" Style="{StaticResource MaterialDesignFlatButton}"
+                <Button x:Name="NavHome" Grid.Column="0" Click="NavHome_Click" Style="{StaticResource MaterialDesignFlatButton}"
                         Content="Accueil" Foreground="{StaticResource NavActiveBrush}" />
-                <Button Grid.Column="1" Click="NavConfig_Click" Style="{StaticResource MaterialDesignFlatButton}"
+                <Button x:Name="NavConfig" Grid.Column="1" Click="NavConfig_Click" Style="{StaticResource MaterialDesignFlatButton}"
                         Content="Config" Foreground="{StaticResource NavInactiveBrush}" />
-                <Button Grid.Column="2" Click="NavLogs_Click" Style="{StaticResource MaterialDesignFlatButton}"
+                <Button x:Name="NavLogs" Grid.Column="2" Click="NavLogs_Click" Style="{StaticResource MaterialDesignFlatButton}"
                         Content="Logs" Foreground="{StaticResource NavInactiveBrush}" />
-                <Button Grid.Column="3" Click="NavSettings_Click" Style="{StaticResource MaterialDesignFlatButton}"
+                <Button x:Name="NavSettings" Grid.Column="3" Click="NavSettings_Click" Style="{StaticResource MaterialDesignFlatButton}"
                         Content="Réglages" Foreground="{StaticResource NavInactiveBrush}" />
             </Grid>
         </Border>

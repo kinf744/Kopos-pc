@@ -106,7 +106,7 @@ namespace KighmuVpnWindows.Profiles
             var list = GetAll();
             foreach (var p in list)
                 if (p.Id == id) p.IsSelected = selected;
-            SaveAll(list);
+            Save(list);
         }
     }
 }
