@@ -12,8 +12,10 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- ===== En-tête : statut de connexion ===== -->
+        <!-- ===== En-tête : logo + statut de connexion ===== -->
         <StackPanel Grid.Row="0" Margin="0,16,0,0" HorizontalAlignment="Center">
+            <Image Source="/Resources/logo.png" Width="96" Height="96"
+                   HorizontalAlignment="Center" Margin="0,0,0,8" />
             <TextBlock x:Name="StatusText" Text="DÉCONNECTÉ"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14" FontWeight="Bold"
