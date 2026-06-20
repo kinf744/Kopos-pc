@@ -554,5 +554,52 @@ namespace KighmuVpnWindows.UI.Views
         }
 
 
+        // ── Boutons Enregistrer la sélection ────────────────────────────────
+        private void BtnSaveSlowDns_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = _slowDnsRepo.GetAll().FindAll(p => p.IsSelected);
+            if (selected.Count == 0)
+                MessageBox.Show("Aucun profil sélectionné.", "Avertissement", MessageBoxButton.OK, MessageBoxImage.Warning);
+            else
+                MessageBox.Show($"{selected.Count} profil(s) SlowDNS enregistré(s) comme actif(s).", "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void BtnSaveHttp_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = _httpProxyRepo.GetAll().FindAll(p => p.IsSelected);
+            if (selected.Count == 0)
+                MessageBox.Show("Aucun profil sélectionné.", "Avertissement", MessageBoxButton.OK, MessageBoxImage.Warning);
+            else
+                MessageBox.Show($"{selected.Count} profil(s) HTTP Proxy enregistré(s) comme actif(s).", "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void BtnSaveXray_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = _xrayVpnRepo.GetAll().FindAll(p => p.IsSelected);
+            if (selected.Count == 0)
+                MessageBox.Show("Aucun profil sélectionné.", "Avertissement", MessageBoxButton.OK, MessageBoxImage.Warning);
+            else
+                MessageBox.Show($"{selected.Count} profil(s) V2Ray/Xray enregistré(s) comme actif(s).", "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void BtnSaveV2Dns_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = _xrayDnsRepo.GetAll().FindAll(p => p.IsSelected);
+            if (selected.Count == 0)
+                MessageBox.Show("Aucun profil sélectionné.", "Avertissement", MessageBoxButton.OK, MessageBoxImage.Warning);
+            else
+                MessageBox.Show($"{selected.Count} profil(s) V2Ray+DNS enregistré(s) comme actif(s).", "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void BtnSaveHysteria_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = _hysteriaRepo.GetAll().FindAll(p => p.IsSelected);
+            if (selected.Count == 0)
+                MessageBox.Show("Aucun profil sélectionné.", "Avertissement", MessageBoxButton.OK, MessageBoxImage.Warning);
+            else
+                MessageBox.Show($"{selected.Count} profil(s) Hysteria enregistré(s) comme actif(s).", "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+
     }
 }

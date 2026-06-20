@@ -40,6 +40,7 @@
                         <TextBlock Text="Clic droit sur un profil pour le modifier, cloner ou supprimer"
                                    Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap" />
                         <StackPanel x:Name="SlowDnsProfilesList" />
+                        <Button Content="Enregistrer la sélection" Style="{StaticResource KighmuButton}" HorizontalAlignment="Right" Margin="0,8,0,0" Click="BtnSaveSlowDns_Click" />
                     </StackPanel>
                 </Border>
 
@@ -57,6 +58,7 @@
                         <TextBlock Text="Clic droit sur un profil pour le modifier, cloner ou supprimer"
                                    Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap" />
                         <StackPanel x:Name="HttpProfilesList" />
+                        <Button Content="Enregistrer la sélection" Style="{StaticResource KighmuButton}" HorizontalAlignment="Right" Margin="0,8,0,0" Click="BtnSaveHttp_Click" />
                     </StackPanel>
                 </Border>
 
@@ -122,6 +124,7 @@
                         <TextBlock Text="Clic droit sur un profil pour le modifier, cloner ou supprimer"
                                    Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap" />
                         <StackPanel x:Name="XrayProfilesList" />
+                        <Button Content="Enregistrer la sélection" Style="{StaticResource KighmuButton}" HorizontalAlignment="Right" Margin="0,8,0,0" Click="BtnSaveXray_Click" />
                     </StackPanel>
                 </Border>
 
@@ -139,6 +142,7 @@
                         <TextBlock Text="Clic droit sur un profil pour le modifier, cloner ou supprimer"
                                    Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap" />
                         <StackPanel x:Name="V2DnsProfilesList" />
+                        <Button Content="Enregistrer la sélection" Style="{StaticResource KighmuButton}" HorizontalAlignment="Right" Margin="0,8,0,0" Click="BtnSaveV2Dns_Click" />
                     </StackPanel>
                 </Border>
 
@@ -156,6 +160,7 @@
                         <TextBlock Text="Clic droit sur un profil pour le modifier, cloner ou supprimer"
                                    Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap" />
                         <StackPanel x:Name="HysteriaProfilesList" />
+                        <Button Content="Enregistrer la sélection" Style="{StaticResource KighmuButton}" HorizontalAlignment="Right" Margin="0,8,0,0" Click="BtnSaveHysteria_Click" />
                     </StackPanel>
                 </Border>
 
