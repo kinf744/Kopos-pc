@@ -81,15 +81,10 @@ namespace KighmuVpnWindows.UI.Views
                     AddField("SNI",           "sni",         "example.com");
                     break;
                 case TunnelMode.V2RAY_XRAY:
-                    AddField("Nom du profil", "profileName",   "Mon profil Xray");
-                    AddField("Serveur",       "serverAddress", "vpn.example.com");
-                    AddField("Port",          "serverPort",    "443");
-                    AddField("UUID",          "uuid",          "");
-                    AddField("Protocol",      "protocol",      "vless");
-                    AddField("Transport",     "transport",     "ws");
-                    AddField("Path WS",       "wsPath",        "/");
-                    AddField("SNI",           "sni",           "vpn.example.com");
-                    AddJsonField("Ou coller config JSON Xray");
+                    AddField("Nom du profil", "profileName", "Mon profil Xray");
+                    AddModeRadio("Mode", "inputMode", new[]{"Lien (vmess/vless/trojan)", "JSON direct"});
+                    AddLinkField("Lien V2Ray/Xray", "xrayLink", "vmess:// vless:// trojan://");
+                    AddJsonField("Config JSON Xray direct");
                     break;
                 case TunnelMode.V2RAY_SLOWDNS:
                     AddField("Nom du profil",              "profileName", "Mon profil V2Ray+DNS");
@@ -101,13 +96,13 @@ namespace KighmuVpnWindows.UI.Views
                     AddSlider("Flux simultanes",            "tunnelCount", 1, 4, 1);
                     break;
                 case TunnelMode.HYSTERIA_UDP:
-                    AddField("Nom du profil",     "profileName",   "Mon profil Hysteria");
-                    AddField("Serveur",           "serverAddress", "vpn.example.com");
-                    AddField("Port",              "serverPort",    "36712");
-                    AddField("Mot de passe",      "authPassword",  "", isPassword: true);
-                    AddField("SNI",               "sni",           "vpn.example.com");
-                    AddField("OBFS",              "obfs",          "");
-                    AddField("Mot de passe OBFS", "obfsPassword",  "");
+                    AddField("Nom du profil",                    "profileName",   "Mon profil Hysteria");
+                    AddField("Server Address (host ou IP)",      "serverAddress", "vpn.example.com");
+                    AddField("Authentication Password",          "authPassword",  "", isPassword: true);
+                    AddField("Upload Speed (Mbps)",              "uploadMbps",    "100");
+                    AddField("Download Speed (Mbps)",            "downloadMbps",  "100");
+                    AddField("Obfuscation Password (optionnel)", "obfsPassword",  "");
+                    AddField("Port Hopping (ex: 20000-50000)",   "portHopping",   "20000-50000");
                     break;
             }
             var saveBtn = new Button
@@ -133,6 +128,63 @@ namespace KighmuVpnWindows.UI.Views
                 DynamicFieldsPanel.Children.Add(new PasswordBox { Tag = tag });
             else
                 DynamicFieldsPanel.Children.Add(new TextBox { Tag = tag, Text = placeholder });
+        }
+
+        private void AddModeRadio(string label, string tag, string[] options)
+        {
+            DynamicFieldsPanel.Children.Add(new TextBlock
+            {
+                Text       = label,
+                Margin     = new Thickness(0, 8, 0, 2),
+                Foreground = (System.Windows.Media.Brush)TryFindResource("TextSecondaryBrush")
+                          ?? System.Windows.Media.Brushes.Gray
+            });
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Tag = tag };
+            for (int i = 0; i < options.Length; i++)
+            {
+                var rb = new System.Windows.Controls.RadioButton
+                {
+                    Content   = options[i],
+                    Tag       = i.ToString(),
+                    GroupName = tag,
+                    Margin    = new Thickness(0, 0, 16, 0),
+                    IsChecked = i == 0,
+                    Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush")
+                              ?? System.Windows.Media.Brushes.White
+                };
+                rb.Checked += (s, e) => UpdateXrayFieldsVisibility();
+                panel.Children.Add(rb);
+            }
+            DynamicFieldsPanel.Children.Add(panel);
+        }
+
+        private void UpdateXrayFieldsVisibility()
+        {
+            bool isLink = GetRadioValue("inputMode") == "0";
+            foreach (UIElement el in DynamicFieldsPanel.Children)
+            {
+                if (el is TextBox tb)
+                {
+                    if (tb.Tag?.ToString() == "xrayLink")
+                        tb.Visibility = isLink ? Visibility.Visible : Visibility.Collapsed;
+                    if (tb.Tag?.ToString() == "xrayJson")
+                        tb.Visibility = isLink ? Visibility.Collapsed : Visibility.Visible;
+                }
+            }
+        }
+
+        private string GetRadioValue(string groupTag)
+        {
+            foreach (UIElement el in DynamicFieldsPanel.Children)
+            {
+                if (el is StackPanel sp && sp.Tag?.ToString() == groupTag)
+                {
+                    foreach (UIElement child in sp.Children)
+                        if (child is System.Windows.Controls.RadioButton rb && rb.IsChecked == true)
+                            return rb.Tag?.ToString() ?? "0";
+                }
+            }
+            return "0";
         }
 
         private void AddLinkField(string label, string tag, string placeholder)
@@ -283,19 +335,19 @@ namespace KighmuVpnWindows.UI.Views
                     }
                     case TunnelMode.V2RAY_XRAY:
                     {
-                        var repo = new XrayVpnProfileRepository();
+                        var repo     = new XrayVpnProfileRepository();
+                        var mode     = GetRadioValue("inputMode");
+                        var link     = GetField("xrayLink").Trim();
+                        var jsonCfg  = GetField("xrayJson").Trim();
                         var p = new XrayVpnProfile
                         {
-                            ProfileName   = GetField("profileName"),
-                            ServerAddress = GetField("serverAddress"),
-                            ServerPort    = int.TryParse(GetField("serverPort"), out var v5) ? v5 : 443,
-                            Uuid          = GetField("uuid"),
-                            Protocol      = GetField("protocol"),
-                            Transport     = GetField("transport"),
-                            WsPath        = GetField("wsPath"),
-                            Sni           = GetField("sni"),
-                            XrayJson      = GetField("xrayJson")
+                            ProfileName = GetField("profileName"),
+                            ActiveMode  = mode == "0" ? "link" : "json",
+                            XrayLink    = link,
+                            XrayJson    = jsonCfg
                         };
+                        if (mode == "0" && !string.IsNullOrWhiteSpace(link))
+                            XrayVpnProfile.ParseLinkIntoProfile(link, p);
                         if (string.IsNullOrWhiteSpace(p.ProfileName))
                             p.ProfileName = "Xray " + DateTime.Now.ToString("HH:mm");
                         repo.Add(p);
@@ -328,11 +380,11 @@ namespace KighmuVpnWindows.UI.Views
                         {
                             ProfileName   = GetField("profileName"),
                             ServerAddress = GetField("serverAddress"),
-                            ServerPort    = int.TryParse(GetField("serverPort"), out var v7) ? v7 : 36712,
                             AuthPassword  = GetField("authPassword"),
-                            Sni           = GetField("sni"),
-                            Obfs          = GetField("obfs"),
-                            ObfsPassword  = GetField("obfsPassword")
+                            UploadMbps    = int.TryParse(GetField("uploadMbps"),   out var vup)   ? vup   : 100,
+                            DownloadMbps  = int.TryParse(GetField("downloadMbps"), out var vdown) ? vdown : 100,
+                            ObfsPassword  = GetField("obfsPassword"),
+                            PortHopping   = GetField("portHopping").Length > 0 ? GetField("portHopping") : "20000-50000"
                         };
                         if (string.IsNullOrWhiteSpace(p.ProfileName))
                             p.ProfileName = "Hysteria " + DateTime.Now.ToString("HH:mm");

@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace KighmuVpnWindows.Profiles
 {
@@ -87,5 +88,119 @@ namespace KighmuVpnWindows.Profiles
 
         public static string ListToJson(List<XrayVpnProfile> list) =>
             JsonConvert.SerializeObject(list);
+
+        public static void ParseLinkIntoProfile(string link, XrayVpnProfile p)
+        {
+            try
+            {
+                if (link.StartsWith("vmess://"))
+                {
+                    var b64  = link.Substring("vmess://".Length);
+                    var json = Encoding.UTF8.GetString(Convert.FromBase64String(b64));
+                    var obj  = Newtonsoft.Json.Linq.JObject.Parse(json);
+                    string transport = obj["net"]?.ToString() ?? "tcp";
+                    string tls       = obj["tls"]?.ToString() ?? "";
+                    string sni       = obj["sni"]?.ToString() ?? obj["add"]?.ToString() ?? "";
+                    string path      = obj["path"]?.ToString() ?? "/";
+                    string wsHost    = obj["host"]?.ToString() ?? obj["add"]?.ToString() ?? "";
+                    string security  = tls == "tls" ? "tls" : "none";
+                    p.Protocol      = "vmess";
+                    p.ServerAddress = obj["add"]?.ToString()  ?? "";
+                    p.ServerPort    = obj["port"] != null ? int.Parse(obj["port"].ToString()) : 443;
+                    p.Uuid          = obj["id"]?.ToString()   ?? "";
+                    p.Encryption    = obj["scy"]?.ToString()  ?? "auto";
+                    p.Transport     = transport;
+                    p.WsPath        = path;
+                    p.WsHost        = wsHost;
+                    p.Tls           = tls == "tls";
+                    p.Sni           = sni;
+                    p.XrayLinkJson  = BuildVmessJson(obj, transport, security, sni, path, wsHost);
+                }
+                else if (link.StartsWith("vless://") || link.StartsWith("trojan://"))
+                {
+                    var uri    = new Uri(link);
+                    string proto = link.StartsWith("vless://") ? "vless" : "trojan";
+                    var parms  = new Dictionary<string, string>();
+                    foreach (var part in (uri.Query ?? "").TrimStart('?').Split('&'))
+                    {
+                        var kv = part.Split('=');
+                        if (kv.Length == 2)
+                            parms[kv[0]] = Uri.UnescapeDataString(kv[1]);
+                    }
+                    string transport = parms.ContainsKey("type")     ? parms["type"]     : "tcp";
+                    string security  = parms.ContainsKey("security") ? parms["security"] : "none";
+                    string sni       = parms.ContainsKey("sni")      ? parms["sni"]      : uri.Host ?? "";
+                    string path      = parms.ContainsKey("path")     ? parms["path"]     : "/";
+                    string wsHost    = parms.ContainsKey("host")     ? parms["host"]     : sni;
+                    string fp        = parms.ContainsKey("fp")       ? parms["fp"]       : "chrome";
+                    string pbk       = parms.ContainsKey("pbk")      ? parms["pbk"]      : "";
+                    string sid       = parms.ContainsKey("sid")       ? parms["sid"]      : "";
+                    string flow      = parms.ContainsKey("flow")     ? parms["flow"]     : "";
+                    p.Protocol      = proto;
+                    p.Uuid          = uri.UserInfo ?? "";
+                    p.ServerAddress = uri.Host ?? "";
+                    p.ServerPort    = uri.Port > 0 ? uri.Port : 443;
+                    p.Transport     = transport;
+                    p.Tls           = security == "tls" || security == "reality";
+                    p.Sni           = sni;
+                    p.WsPath        = path;
+                    p.WsHost        = wsHost;
+                    p.Fingerprint   = fp;
+                    p.PublicKey     = pbk;
+                    p.ShortId       = sid;
+                    p.Flow          = flow;
+                    p.AllowInsecure = parms.ContainsKey("allowInsecure") && parms["allowInsecure"] == "1";
+                    p.XrayLinkJson  = BuildVlessOrTrojanJson(proto, p.Uuid, p.ServerAddress, p.ServerPort,
+                                        transport, security, sni, path, wsHost, fp, pbk, sid, flow);
+                }
+            }
+            catch { }
+        }
+
+        private static string StreamSettings(string transport, string security, string sni,
+            string path, string host, string fp = "chrome", string pbk = "", string sid = "")
+        {
+            string tlsPart = security == "tls"
+                ? $","tlsSettings":{{"serverName":"{sni}","fingerprint":"{fp}"}}"
+                : security == "reality"
+                ? $","realitySettings":{{"serverName":"{sni}","fingerprint":"{fp}","publicKey":"{pbk}","shortId":"{sid}"}}"
+                : "";
+            string net = transport == "mkcp" ? "kcp" : transport == "raw" ? "tcp" : transport;
+            string netPart = transport switch
+            {
+                "ws"          => $","wsSettings":{{"path":"{path}","headers":{{"Host":"{host}"}}}}",
+                "grpc"        => $","grpcSettings":{{"serviceName":"{path}"}}",
+                "xhttp"       => $","xhttpSettings":{{"path":"{path}","host":"{host}","mode":"stream-up"}}",
+                "splithttp"   => $","splithttpSettings":{{"path":"{path}","host":"{host}"}}",
+                "h2" or "http"=> $","httpSettings":{{"path":"{path}","host":["{host}"]}}",
+                "httpupgrade" => $","httpupgradeSettings":{{"path":"{path}","host":"{host}"}}",
+                "kcp" or "mkcp"=> $","kcpSettings":{{"mtu":1350,"tti":20,"uplinkCapacity":5,"downlinkCapacity":20,"congestion":false,"readBufferSize":2,"writeBufferSize":2,"header":{{"type":"none"}}}}",
+                _             => ","tcpSettings":{"header":{"type":"none"}}"
+            };
+            return $"{{"network":"{net}","security":"{security}"{tlsPart}{netPart}}}";
+        }
+
+        private static string BuildVmessJson(Newtonsoft.Json.Linq.JObject obj,
+            string transport, string security, string sni, string path, string wsHost)
+        {
+            string host    = obj["add"]?.ToString() ?? "";
+            int    port    = obj["port"] != null ? int.Parse(obj["port"].ToString()) : 443;
+            string uuid    = obj["id"]?.ToString()  ?? "";
+            int    alterId = obj["aid"] != null ? int.Parse(obj["aid"].ToString()) : 0;
+            string stream  = StreamSettings(transport, security, sni, path, wsHost);
+            return $"{{"log":{{"loglevel":"warning"}},"inbounds":[{{"port":10808,"protocol":"socks","settings":{{"udp":true}}}}],"outbounds":[{{"protocol":"vmess","settings":{{"vnext":[{{"address":"{host}","port":{port},"users":[{{"id":"{uuid}","alterId":{alterId},"security":"auto"}}]}}]}},"streamSettings":{stream},"mux":{{"enabled":false}}}},{{"protocol":"freedom","tag":"direct"}}],"routing":{{"rules":[]}}}}";
+        }
+
+        private static string BuildVlessOrTrojanJson(string proto, string uuid, string host, int port,
+            string transport, string security, string sni, string path, string wsHost,
+            string fp, string pbk, string sid, string flow)
+        {
+            string stream  = StreamSettings(transport, security, sni, path, wsHost, fp, pbk, sid);
+            string flowPart = !string.IsNullOrEmpty(flow) ? $","flow":"{flow}"" : "";
+            string outbound = proto == "trojan"
+                ? $"{{"protocol":"trojan","settings":{{"servers":[{{"address":"{host}","port":{port},"password":"{uuid}"}}]}},"streamSettings":{stream},"mux":{{"enabled":false}}}}"
+                : $"{{"protocol":"vless","settings":{{"vnext":[{{"address":"{host}","port":{port},"users":[{{"id":"{uuid}","encryption":"none"{flowPart}}}]}}]}},"streamSettings":{stream},"mux":{{"enabled":false}}}}";
+            return $"{{"log":{{"loglevel":"warning"}},"inbounds":[{{"port":10808,"protocol":"socks","settings":{{"udp":true}}}}],"outbounds":[{outbound},{{"protocol":"freedom","tag":"direct"}}],"routing":{{"rules":[]}}}}";
+        }
     }
 }
