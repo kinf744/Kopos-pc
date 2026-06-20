@@ -74,8 +74,6 @@ namespace KighmuVpnWindows.UI.Dialogs
 
             Label("SERVEUR");
             var etHost = Field("Server Address", p.ServerAddress);
-            var etPort = Field("Server Port", p.ServerPort.ToString());
-            var etSni  = Field("SNI (optionnel)", p.Sni);
 
             Label("AUTHENTIFICATION");
             var etAuth = Field("Auth Password", p.AuthPassword);
@@ -118,8 +116,8 @@ namespace KighmuVpnWindows.UI.Dialogs
                     Id            = p.Id,
                     ProfileName   = string.IsNullOrWhiteSpace(etName.Text) ? "Profil" : etName.Text,
                     ServerAddress = etHost.Text,
-                    ServerPort    = int.TryParse(etPort.Text, out var sp) ? sp : 36712,
-                    Sni           = etSni.Text,
+                    ServerPort    = p.ServerPort,
+                    Sni           = p.Sni,
                     AuthPassword  = etAuth.Text,
                     ObfsPassword  = etObfs.Text,
                     UploadMbps    = int.TryParse(etUp.Text,   out var up)   ? up   : 100,
