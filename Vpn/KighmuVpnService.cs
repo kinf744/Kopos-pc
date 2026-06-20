@@ -64,7 +64,8 @@ namespace KighmuVpnWindows.Vpn
                 KighmuLogger.Info(TAG, $"tun2socks demarre sur adaptateur [{TUN_ADAPTER}]");
 
                 // 4. Configurer le routage systeme Windows (force tout le trafic -> tunnel)
-                await Task.Delay(800);
+                // Attendre que hev-socks5-tunnel ait cree l'adaptateur Wintun (max 5s)
+                await Task.Delay(1500);
                 bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER, dnsServer: "198.18.0.1");
                 if (!routesOk)
                     throw new Exception("Impossible de configurer le routage systeme (verifiez les droits administrateur).");
