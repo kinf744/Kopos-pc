@@ -45,8 +45,18 @@
 
                 <Border Style="{StaticResource KighmuCard}" Margin="0,0,0,12">
                     <StackPanel x:Name="PanelHttp" Visibility="Collapsed">
-                        <TextBlock Text="HTTP PROXY PROFILES" Style="{StaticResource KighmuSectionHeader}" />
-                        <TextBlock Text="(squelette - contenu a venir)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="HTTP PROXY PROFILES" Style="{StaticResource KighmuSectionHeader}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" x:Name="BtnAddHttp" Content="+" Width="32" Height="32" FontSize="18"
+                                    Style="{StaticResource KighmuButton}" Click="BtnAddHttp_Click" Padding="0" />
+                        </Grid>
+                        <TextBlock Text="Clic droit sur un profil pour le modifier, cloner ou supprimer"
+                                   Foreground="{StaticResource TextHintBrush}" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap" />
+                        <StackPanel x:Name="HttpProfilesList" />
                     </StackPanel>
                 </Border>
 
