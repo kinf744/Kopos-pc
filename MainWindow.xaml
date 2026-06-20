@@ -9,15 +9,62 @@
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="64" />
         </Grid.RowDefinitions>
 
+        <!-- ===== Barre de titre avec menu 3 points ===== -->
+        <Border Grid.Row="0" Background="{StaticResource SurfaceDarkBrush}"
+                BorderThickness="0,0,0,1" BorderBrush="{StaticResource SurfaceDarkElevatedBrush}"
+                Padding="16,8">
+            <Grid>
+                <TextBlock Text="KIGHMU VPN" FontSize="16" FontWeight="Bold"
+                           VerticalAlignment="Center">
+                    <TextBlock.Inlines>
+                        <Run Text="KIGHMU " Foreground="{StaticResource TextPrimaryBrush}" />
+                        <Run Text="VPN" Foreground="{StaticResource AccentBlueBrush}" />
+                    </TextBlock.Inlines>
+                </TextBlock>
+                <Button x:Name="MenuButton" Content="⋮" HorizontalAlignment="Right"
+                        FontSize="20" FontWeight="Bold" Width="36" Height="36"
+                        Style="{StaticResource MaterialDesignFlatButton}"
+                        Foreground="{StaticResource TextPrimaryBrush}"
+                        Click="MenuButton_Click" />
+                <Popup x:Name="MenuPopup" PlacementTarget="{Binding ElementName=MenuButton}"
+                       Placement="Bottom" StaysOpen="False">
+                    <Border Background="{StaticResource SurfaceDarkElevatedBrush}"
+                            BorderThickness="1" BorderBrush="{StaticResource SurfaceDarkElevatedBrush}"
+                            CornerRadius="4" Padding="4">
+                        <StackPanel>
+                            <Button Content="📥  Importer config" Style="{StaticResource MaterialDesignFlatButton}"
+                                    Foreground="{StaticResource TextPrimaryBrush}"
+                                    HorizontalContentAlignment="Left" Padding="12,8"
+                                    Click="Menu_Import_Click" />
+                            <Button Content="📤  Exporter config" Style="{StaticResource MaterialDesignFlatButton}"
+                                    Foreground="{StaticResource TextPrimaryBrush}"
+                                    HorizontalContentAlignment="Left" Padding="12,8"
+                                    Click="Menu_Export_Click" />
+                            <Separator Background="{StaticResource SurfaceDarkBrush}" />
+                            <Button Content="🔄  Réinitialiser" Style="{StaticResource MaterialDesignFlatButton}"
+                                    Foreground="{StaticResource TextPrimaryBrush}"
+                                    HorizontalContentAlignment="Left" Padding="12,8"
+                                    Click="Menu_Reset_Click" />
+                            <Button Content="📜  Licences" Style="{StaticResource MaterialDesignFlatButton}"
+                                    Foreground="{StaticResource TextPrimaryBrush}"
+                                    HorizontalContentAlignment="Left" Padding="12,8"
+                                    Click="Menu_License_Click" />
+                        </StackPanel>
+                    </Border>
+                </Popup>
+            </Grid>
+        </Border>
+
         <!-- ===== Zone de contenu (change selon l'onglet actif) ===== -->
-        <ContentControl x:Name="MainContent" Grid.Row="0" Margin="0" />
+        <ContentControl x:Name="MainContent" Grid.Row="1" Margin="0" />
 
         <!-- ===== Barre de navigation basse (équivalent BottomNavigationView Android) ===== -->
-        <Border Grid.Row="1" Background="{StaticResource SurfaceDarkBrush}" BorderThickness="0,1,0,0"
+        <Border Grid.Row="2" Background="{StaticResource SurfaceDarkBrush}" BorderThickness="0,1,0,0"
                 BorderBrush="{StaticResource SurfaceDarkElevatedBrush}">
             <Grid>
                 <Grid.ColumnDefinitions>

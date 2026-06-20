@@ -72,5 +72,6 @@ namespace KighmuVpnWindows.Profiles
                 if (p.Id == id) p.IsSelected = selected;
             Save(list);
         }
+        public void DeleteAll() => Save(new System.Collections.Generic.List<SlowDnsProfile>());
     }
 }

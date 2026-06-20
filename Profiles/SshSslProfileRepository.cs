@@ -58,5 +58,6 @@ namespace KighmuVpnWindows.Profiles
                 p.IsSelected = (p.Id == id);
             SaveAll(list);
         }
+        public void DeleteAll() => Save(new System.Collections.Generic.List<SshSslProfile>());
     }
 }
