@@ -12,10 +12,8 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- ===== En-tête : logo + statut de connexion ===== -->
+        <!-- ===== En-tête : statut de connexion ===== -->
         <StackPanel Grid.Row="0" Margin="0,16,0,0" HorizontalAlignment="Center">
-            <Image Source="/Resources/logo.png" Width="96" Height="96"
-                   HorizontalAlignment="Center" Margin="0,0,0,8" />
             <TextBlock x:Name="StatusText" Text="DÉCONNECTÉ"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14" FontWeight="Bold"
@@ -25,13 +23,18 @@
                        HorizontalAlignment="Center" Margin="0,4,0,0" />
         </StackPanel>
 
-        <!-- ===== Bouton Connect central ===== -->
-        <Button x:Name="ConnectButton" Grid.Row="1"
-                Style="{StaticResource KighmuConnectButton}"
-                Content="CONNECT"
-                Click="ConnectButton_Click"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center" />
+        <!-- ===== Bouton Connect circulaire avec logo superpose (identique Android) ===== -->
+        <Grid Grid.Row="1" Width="160" Height="160"
+              HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Ellipse Width="160" Height="160" Fill="{StaticResource AccentBlueBrush}" Opacity="0.07" />
+            <Ellipse Width="138" Height="138" Fill="{StaticResource AccentBlueBrush}" Opacity="0.12" />
+            <Button x:Name="ConnectButton"
+                    Style="{StaticResource KighmuConnectButton}"
+                    Click="ConnectButton_Click" />
+            <Image Source="/Resources/logo.png" Width="76" Height="76"
+                   IsHitTestVisible="False"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
 
         <!-- ===== Sélecteur de profil actif ===== -->
         <Border Grid.Row="2" Style="{StaticResource KighmuCard}" Margin="0,16,0,0">

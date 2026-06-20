@@ -104,7 +104,6 @@ namespace KighmuVpnWindows.UI.Views
                     StatusText.Text         = "CONNECTE";
                     StatusText.Foreground   = green;
                     StatusDetailText.Text   = $"Tunnel actif — {modeLabel}";
-                    ConnectButton.Content   = "DISCONNECT";
                     ConnectButton.IsEnabled = true;
                     break;
 
@@ -112,7 +111,6 @@ namespace KighmuVpnWindows.UI.Views
                     StatusText.Text         = "CONNEXION...";
                     StatusText.Foreground   = orange;
                     StatusDetailText.Text   = $"Demarrage {modeLabel}...";
-                    ConnectButton.Content   = "ANNULER";
                     ConnectButton.IsEnabled = true;
                     break;
 
@@ -127,7 +125,6 @@ namespace KighmuVpnWindows.UI.Views
                     StatusText.Text         = "ERREUR";
                     StatusText.Foreground   = red;
                     StatusDetailText.Text   = "Echec — verifiez la config";
-                    ConnectButton.Content   = "REESSAYER";
                     ConnectButton.IsEnabled = true;
                     break;
 
@@ -135,7 +132,6 @@ namespace KighmuVpnWindows.UI.Views
                     StatusText.Text         = "DECONNECTE";
                     StatusText.Foreground   = grey;
                     StatusDetailText.Text   = "Appuyez pour vous connecter";
-                    ConnectButton.Content   = "CONNECT";
                     ConnectButton.IsEnabled = true;
                     break;
             }
