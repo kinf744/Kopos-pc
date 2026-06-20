@@ -18,6 +18,9 @@ namespace KighmuVpnWindows.Utils
         static KighmuLogger()
         {
             Directory.CreateDirectory(LogDir);
+            // Effacer le log au démarrage : les logs n'ont de sens que pour la session courante
+            try { if (File.Exists(LogFile)) File.WriteAllText(LogFile, string.Empty); }
+            catch { /* best effort */ }
         }
 
         /// <summary>Retourne les N dernieres lignes du fichier de log (pour affichage historique).</summary>
