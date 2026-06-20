@@ -17,8 +17,7 @@
                               SelectionChanged="ModeSelector_SelectionChanged" Margin="0,4,0,0">
                         <ComboBoxItem Content="SlowDNS" Tag="0" />
                         <ComboBoxItem Content="HTTP Proxy" Tag="1" />
-                        <ComboBoxItem Content="SSH WebSocket" Tag="2" />
-                        <ComboBoxItem Content="SSH SSL/TLS" Tag="3" />
+                                         <ComboBoxItem Content="SSH SSL/TLS" Tag="3" />
                         <ComboBoxItem Content="V2Ray / Xray" Tag="4" />
                         <ComboBoxItem Content="V2Ray + SlowDNS" Tag="5" />
                         <ComboBoxItem Content="Hysteria UDP" Tag="6" />

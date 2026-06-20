@@ -99,18 +99,19 @@ namespace KighmuVpnWindows.Engines
         // ── SSH SSL/TLS ──────────────────────────────────────────────────────
         private static ITunnelEngine CreateSshSsl()
         {
-            var repo    = new SlowDnsProfileRepository();
-            var profile = repo.GetSelected().FirstOrDefault()
-                       ?? repo.GetAll().FirstOrDefault()
+            var repo    = new SshSslProfileRepository();
+            var profile = repo.GetActive()
                        ?? throw new InvalidOperationException("Aucun profil SSH SSL/TLS configure.");
 
             KighmuLogger.Info(TAG, $"SshSsl: {profile.ProfileName}");
             return new SshSslEngine(new SshSslConfig {
-                SshHost = profile.SshHost,
-                SshPort = profile.SshPort,
-                SshUser = profile.SshUser,
-                SshPass = profile.SshPass,
-                Sni     = profile.ProxyHost
+                SshHost       = profile.SshHost,
+                SshPort       = profile.SshPort,
+                SshUser       = profile.SshUser,
+                SshPass       = profile.SshPass,
+                Sni           = profile.Sni,
+                TlsVersion    = profile.TlsVersion,
+                AllowInsecure = profile.AllowInsecure
             });
         }
 
