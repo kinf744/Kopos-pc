@@ -507,21 +507,7 @@ namespace KighmuVpnWindows.UI.Views
             });
         }
 
-        // ── Import / Export / Save : seront reconnectes panel par panel dans les etapes suivantes ──
-        private void Import_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Import : sera reconnecte lors de la construction de ce panel.", "A venir");
-        }
 
-        private void Export_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Export : sera reconnecte lors de la construction de ce panel.", "A venir");
-        }
-
-        private void Save_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Enregistrer : sera reconnecte lors de la construction de ce panel.", "A venir");
-        }
         // ── SSH SSL/TLS : formulaire direct (pas de liste de profils) ────────
         private void LoadSslFields()
         {
