@@ -18,8 +18,21 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class MultiSlowDnsEngine : ITunnelEngine
     {
-        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
-        public string? ServerIp => null;
+        /// <summary>IPs des resolveurs DNS (un ou plusieurs profils), separees par virgule.</summary>
+        public string? ServerIp
+        {
+            get
+            {
+                lock (_enginesLock)
+                {
+                    var ips = _engines.Select(e => e.ServerIp)
+                        .Where(ip => !string.IsNullOrWhiteSpace(ip))
+                        .Distinct()
+                        .ToList();
+                    return ips.Count > 0 ? string.Join(",", ips) : null;
+                }
+            }
+        }
 
         private const string TAG = "MultiSlowDnsEngine";
         private const int SESSION_TIMEOUT_MS = 15000; // kex SSH via dnstt peut prendre 8-12s

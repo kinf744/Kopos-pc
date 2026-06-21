@@ -17,8 +17,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class HttpProxyEngine : ITunnelEngine
     {
-        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
-        public string? ServerIp => null;
+        private string? _resolvedServerIp;
+        /// <summary>IP serveur (proxy) a exclure des routes systeme.</summary>
+        public string? ServerIp => _resolvedServerIp;
 
         private const string TAG = "HttpProxyEngine";
         private const string CRLF = "\r\n";
@@ -112,6 +113,19 @@ namespace KighmuVpnWindows.Engines
             tcpClient.SendBufferSize    = PIPE_BUFFER_SIZE;
             tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
             tcpClient.Client.NoDelay = true;
+
+            try
+            {
+                var entry = await System.Net.Dns.GetHostEntryAsync(_proxyHost);
+                _resolvedServerIp = entry.AddressList.Length > 0
+                    ? entry.AddressList[0].ToString()
+                    : _proxyHost;
+            }
+            catch
+            {
+                _resolvedServerIp = _proxyHost;
+            }
+            KighmuLogger.Info(TAG, $"IP serveur proxy: {_resolvedServerIp}");
 
             await tcpClient.ConnectAsync(_proxyHost, _proxyPort);
             _proxyTcpClient = tcpClient;

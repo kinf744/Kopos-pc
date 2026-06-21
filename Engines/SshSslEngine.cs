@@ -237,6 +237,19 @@ namespace KighmuVpnWindows.Engines
             string host = _sslConfig.SshHost;
             int    port = _sslConfig.SshPort > 0 ? _sslConfig.SshPort : 443;
 
+            try
+            {
+                var entry = await System.Net.Dns.GetHostEntryAsync(host);
+                _resolvedServerIp = entry.AddressList.Length > 0
+                    ? entry.AddressList[0].ToString()
+                    : host;
+            }
+            catch
+            {
+                _resolvedServerIp = host;
+            }
+            KighmuLogger.Info(TAG, $"IP serveur SSH/TLS: {_resolvedServerIp}");
+
             var tcpClient = new TcpClient();
             await tcpClient.ConnectAsync(host, port);
             _tlsTcpClient = tcpClient;

@@ -16,8 +16,21 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class MultiHysteriaEngine : ITunnelEngine
     {
-        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
-        public string? ServerIp => null;
+        /// <summary>IPs des serveurs Hysteria (un ou plusieurs profils), separees par virgule.</summary>
+        public string? ServerIp
+        {
+            get
+            {
+                lock (_enginesLock)
+                {
+                    var ips = _engines.Select(e => e.ServerIp)
+                        .Where(ip => !string.IsNullOrWhiteSpace(ip))
+                        .Distinct()
+                        .ToList();
+                    return ips.Count > 0 ? string.Join(",", ips) : null;
+                }
+            }
+        }
 
         private const string TAG = "MultiHysteria";
         private const int MAX_RETRIES = 20;

@@ -19,8 +19,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class XrayVpnEngine : ITunnelEngine
     {
-        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
-        public string? ServerIp => null;
+        private string? _resolvedServerIp;
+        /// <summary>IP serveur (Xray) a exclure des routes systeme.</summary>
+        public string? ServerIp => _resolvedServerIp;
 
         private const string TAG = "XrayVpnEngine";
 
@@ -77,6 +78,19 @@ namespace KighmuVpnWindows.Engines
         {
             _running = true;
             KighmuLogger.Info(TAG, "Demarrage XrayVpnEngine...");
+
+            try
+            {
+                var entry = await System.Net.Dns.GetHostEntryAsync(_profile.ServerAddress);
+                _resolvedServerIp = entry.AddressList.Length > 0
+                    ? entry.AddressList[0].ToString()
+                    : _profile.ServerAddress;
+            }
+            catch
+            {
+                _resolvedServerIp = _profile.ServerAddress;
+            }
+            KighmuLogger.Info(TAG, $"IP serveur Xray: {_resolvedServerIp}");
 
             string configPath = WriteXrayConfig();
             string binary     = GetBinaryPath("xray.exe");
