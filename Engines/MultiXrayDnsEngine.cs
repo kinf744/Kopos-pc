@@ -234,17 +234,17 @@ namespace KighmuVpnWindows.Engines
                 var balancer = new SocksBalancer(xraySocksPorts);
                 balancer.Start();
                 _socksBalancer = balancer;
-                KighmuLogger.Info(TAG, $"Balancer actif port {SocksBalancer.BALANCER_PORT}");
+                KighmuLogger.Info(TAG, $"Balancer actif port {SocksBalancer.BalancerPort}");
             }
 
-            int finalPort = xraySocksPorts.Count > 1 ? SocksBalancer.BALANCER_PORT : xraySocksPorts[0];
+            int finalPort = xraySocksPorts.Count > 1 ? SocksBalancer.BalancerPort : xraySocksPorts[0];
             KighmuLogger.Info(TAG, $"=== V2Ray+SlowDNS pret port={finalPort} {xraySocksPorts.Count} tunnel(s) ===");
             return finalPort;
         }
 
         public void StartTun2Socks(string tunAdapterName)
         {
-            int targetPort = _activePorts.Count > 1 ? SocksBalancer.BALANCER_PORT
+            int targetPort = _activePorts.Count > 1 ? SocksBalancer.BalancerPort
                            : _activePorts.Count > 0 ? _activePorts[0]
                            : throw new Exception("Aucun port actif");
 
