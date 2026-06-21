@@ -139,7 +139,7 @@ namespace KighmuVpnWindows.Engines
 socks5:
   port: {socksPort}
   address: 127.0.0.1
-  udp: 'tcp'
+  udp: 'udp'
 
 dns:
   port: 5354

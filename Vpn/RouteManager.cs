@@ -46,10 +46,12 @@ namespace KighmuVpnWindows.Vpn
                     .Distinct();
                 foreach (var ip in ips)
                 {
-                    RunCommand("route", $"add {ip} mask 255.255.255.255 {originalGateway} metric 1");
+                    int physIdx = GetPhysicalAdapterIndex();
+                    string ifPart = physIdx > 0 ? $" if {physIdx}" : "";
+                    RunCommand("route", $"add {ip} mask 255.255.255.255 {originalGateway} metric 1{ifPart}");
                     if (!_excludedServerIps.Contains(ip))
                         _excludedServerIps.Add(ip);
-                    KighmuLogger.Info(TAG, $"Pre-exclusion: {ip}/32 via {originalGateway}");
+                    KighmuLogger.Info(TAG, $"Pre-exclusion: {ip}/32 via {originalGateway} if={physIdx}");
                 }
             }
             catch (Exception ex)
@@ -76,7 +78,9 @@ namespace KighmuVpnWindows.Vpn
 
                         foreach (var ip in ips)
                         {
-                            RunCommand("route", $"add {ip} mask 255.255.255.255 {originalGateway} metric 1");
+                            int physIdx3 = GetPhysicalAdapterIndex();
+                            string ifPart3 = physIdx3 > 0 ? $" if {physIdx3}" : "";
+                            RunCommand("route", $"add {ip} mask 255.255.255.255 {originalGateway} metric 1{ifPart3}");
                             _excludedServerIps.Add(ip);
                             KighmuLogger.Info(TAG, $"Route exclusion ajoutee: {ip}/32 via passerelle d'origine {originalGateway} (evite boucle tunnel).");
                         }
@@ -120,6 +124,36 @@ namespace KighmuVpnWindows.Vpn
         /// Recupere l'IP de la passerelle par defaut active AVANT que le tunnel ne soit cree.
         /// Doit etre appele avant ApplyRoutes pour capturer la vraie passerelle Internet.
         /// </summary>
+        /// <summary>Recupere l'index de l'interface physique (Ethernet ou WiFi) pour forcer la sortie des paquets serveur</summary>
+        private static int GetPhysicalAdapterIndex()
+        {
+            try
+            {
+                string output = RunCommandCapture("netsh", "interface ipv4 show interfaces");
+                foreach (var rawLine in output.Split('
+'))
+                {
+                    var line = rawLine.Trim();
+                    // Chercher Ethernet ou Wi-Fi (pas Loopback, pas KighmuVPN, pas tunnel)
+                    if ((line.Contains("Ethernet") || line.Contains("Wi-Fi") || line.Contains("Local Area")) 
+                        && !line.Contains("KighmuVPN") && !line.Contains("Loopback") && !line.Contains("Tunnel"))
+                    {
+                        var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length > 0 && int.TryParse(parts[0], out int idx))
+                        {
+                            KighmuLogger.Info(TAG, $"Interface physique detectee: index={idx} ({line})");
+                            return idx;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                KighmuLogger.Error(TAG, $"GetPhysicalAdapterIndex erreur: {ex.Message}");
+            }
+            return 0;
+        }
+
         private static string? GetDefaultGateway()
         {
             try
