@@ -13,6 +13,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class MultiHttpProxyEngine : ITunnelEngine
     {
+        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
+        public string? ServerIp => null;
+
         private const string TAG              = "MultiHttpProxy";
         private const int    MAX_RETRIES      = 20;
         private const int    RETRY_DELAY_MS   = 2000;

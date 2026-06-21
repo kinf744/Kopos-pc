@@ -15,6 +15,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class MultiXrayDnsEngine : ITunnelEngine
     {
+        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
+        public string? ServerIp => null;
+
         private const string TAG               = "MultiXrayDns";
         private const int    MAX_RETRIES       = 30;
         private const int    RETRY_DELAY_MS    = 800;

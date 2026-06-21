@@ -17,6 +17,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class HttpProxyEngine : ITunnelEngine
     {
+        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
+        public string? ServerIp => null;
+
         private const string TAG = "HttpProxyEngine";
         private const string CRLF = "\r\n";
         private const int PIPE_BUFFER_SIZE = 131072;

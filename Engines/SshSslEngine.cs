@@ -21,6 +21,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class SshSslEngine : ITunnelEngine
     {
+        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
+        public string? ServerIp => null;
+
         private const string TAG = "SshSslEngine";
 
         private readonly SshSslConfig _sslConfig;

@@ -18,6 +18,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class MultiSlowDnsEngine : ITunnelEngine
     {
+        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
+        public string? ServerIp => null;
+
         private const string TAG = "MultiSlowDnsEngine";
         private const int SESSION_TIMEOUT_MS = 15000; // kex SSH via dnstt peut prendre 8-12s
 

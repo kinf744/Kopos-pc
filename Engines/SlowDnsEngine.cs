@@ -18,6 +18,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class SlowDnsEngine : ITunnelEngine
     {
+        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
+        public string? ServerIp => null;
+
         private const string TAG = "SlowDnsEngine";
         public const int BASE_SOCKS_PORT = 10800;
 

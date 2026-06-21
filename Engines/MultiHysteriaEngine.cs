@@ -16,6 +16,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class MultiHysteriaEngine : ITunnelEngine
     {
+        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
+        public string? ServerIp => null;
+
         private const string TAG = "MultiHysteria";
         private const int MAX_RETRIES = 20;
         private const int RETRY_DELAY_MS = 2000;
