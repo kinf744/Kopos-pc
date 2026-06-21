@@ -1,6 +1,7 @@
 using KighmuVpnWindows.Profiles;
 using KighmuVpnWindows.Utils;
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -40,6 +41,7 @@ namespace KighmuVpnWindows.Engines
         private SocksBalancer?  _socksBalancer;
         private List<int>       _activePorts  = new List<int>();
         private CancellationTokenSource? _cts;
+        private Process? _tun2socksProcess;
 
         private static string GetBinaryPath(string name) =>
             System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", name);
@@ -144,26 +146,21 @@ namespace KighmuVpnWindows.Engines
                 var balancer = new SocksBalancer(successPorts);
                 balancer.Start();
                 _socksBalancer = balancer;
-                KighmuLogger.Info(TAG, $"Balancer actif port {SocksBalancer.BALANCER_PORT}");
+                KighmuLogger.Info(TAG, $"Balancer actif port {SocksBalancer.BalancerPort}");
             }
 
-            int finalPort = successPorts.Count > 1 ? SocksBalancer.BALANCER_PORT : successPorts[0];
+            int finalPort = successPorts.Count > 1 ? SocksBalancer.BalancerPort : successPorts[0];
             KighmuLogger.Info(TAG, $"=== HTTP Proxy pret port={finalPort} {successPorts.Count} tunnel(s) ===");
             return finalPort;
         }
 
         public void StartTun2Socks(string tunAdapterName)
         {
-            int targetPort = _activePorts.Count > 1 ? SocksBalancer.BALANCER_PORT
+            int targetPort = _activePorts.Count > 1 ? SocksBalancer.BalancerPort
                            : _activePorts.Count > 0 ? _activePorts[0]
                            : throw new Exception("Aucun port actif");
 
-            // On delegue au premier engine (tun2socks est unique par session VPN)
-            lock (_enginesLock)
-            {
-                if (_engines.Count > 0)
-                    _engines[0].StartTun2SocksOnPort(tunAdapterName, targetPort);
-            }
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, "httpproxy_multi");
             KighmuLogger.Info(TAG, $"tun2socks HTTP Proxy port={targetPort}");
         }
 
@@ -172,12 +169,19 @@ namespace KighmuVpnWindows.Engines
             KighmuLogger.Info(TAG, "Arret MultiHttpProxyEngine...");
             try { _cts?.Cancel(); } catch { }
             try { _socksBalancer?.Stop(); _socksBalancer = null; } catch { }
+            Tun2SocksHelper.Stop(_tun2socksProcess, "httpproxy_multi");
+            _tun2socksProcess = null;
+            List<HttpProxyEngine> snapshot;
             lock (_enginesLock)
             {
-                foreach (var e in _engines)
-                    try { e.Stop().GetAwaiter().GetResult(); } catch { }
+                snapshot = new List<HttpProxyEngine>(_engines);
                 _engines.Clear();
             }
+            await Task.Run(() =>
+            {
+                foreach (var e in snapshot)
+                    try { e.Stop().GetAwaiter().GetResult(); } catch { }
+            });
             KighmuLogger.Info(TAG, "MultiHttpProxyEngine arrete");
         }
 
