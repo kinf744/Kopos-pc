@@ -174,6 +174,26 @@ namespace KighmuVpnWindows.Engines
                 }
             };
 
+            // Brancher stderr sur la meme detection (Hysteria sort souvent sur stderr)
+            _hysteriaProcess.ErrorDataReceived += (s, e) =>
+            {
+                if (e.Data == null || !_running) return;
+                string lineLowerErr = e.Data.ToLowerInvariant();
+                bool looksConnectedErr = lineLowerErr.Contains("connected") ||
+                    (lineLowerErr.Contains("socks5") && e.Data.Contains("127.0.0.1:")) ||
+                    (lineLowerErr.Contains("udp") && (lineLowerErr.Contains("session") || lineLowerErr.Contains("running")));
+                if (looksConnectedErr && !loggedConnected)
+                {
+                    _serverConnected = true;
+                    loggedConnected = true;
+                    var matchErr = Regex.Match(e.Data, @"127\.0\.0\.1:(\d+)");
+                    if (matchErr.Success && int.TryParse(matchErr.Groups[1].Value, out int portErr) && portErr > 0)
+                        _socksPort = portErr;
+                    KighmuLogger.Info(TAG, "Hysteria connecte (stderr) \u2705");
+                }
+                else if (lineLowerErr.Contains("error") || lineLowerErr.Contains("fatal"))
+                    KighmuLogger.Error(TAG, $"Hysteria erreur(stderr): {e.Data}");
+            };
             _hysteriaProcess.Exited += (s, e) =>
             {
                 KighmuLogger.Info(TAG, $"Hysteria exit: {_hysteriaProcess?.ExitCode}");

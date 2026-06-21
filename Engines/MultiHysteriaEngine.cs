@@ -2,6 +2,7 @@ using KighmuVpnWindows.Models;
 using KighmuVpnWindows.Profiles;
 using KighmuVpnWindows.Utils;
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,6 +43,7 @@ namespace KighmuVpnWindows.Engines
         private readonly object _enginesLock = new();
         private SocksBalancer? _socksBalancer;
         private List<int> _activePorts = new();
+        private Process? _tun2socksProcess;
 
         public MultiHysteriaEngine(HysteriaConfig baseConfig)
         {
@@ -167,37 +169,25 @@ namespace KighmuVpnWindows.Engines
 
         public void StartTun2Socks(string tunAdapterName)
         {
-            // Toujours pointer tun2socks sur un seul port SOCKS5 :
-            // - si balancer actif -> son port unique (qui distribue en round-robin)
-            // - sinon -> le port direct du premier tunnel
             int targetPort;
             if (_activePorts.Count > 1)
-            {
                 targetPort = SocksBalancer.BalancerPort;
-            }
             else if (_activePorts.Count == 1)
-            {
                 targetPort = _activePorts[0];
-            }
             else
             {
                 KighmuLogger.Error(TAG, "Aucun port actif - impossible de demarrer tun2socks");
                 return;
             }
-
             KighmuLogger.Info(TAG, $"tun2socks Hysteria -> port={targetPort} ({_activePorts.Count} tunnel(s))");
-
-            // Démarre hev-socks5-tunnel (equivalent du HevTun2Socks.start cote Android),
-            // pointé sur le port choisi ci-dessus.
-            lock (_enginesLock)
-            {
-                _engines.FirstOrDefault()?.StartTun2SocksOnPort(tunAdapterName, targetPort);
-            }
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, "hysteria_multi");
         }
 
         public async Task Stop()
         {
             KighmuLogger.Info(TAG, "Arret MultiHysteriaEngine...");
+            Tun2SocksHelper.Stop(_tun2socksProcess, "hysteria_multi");
+            _tun2socksProcess = null;
             try { _socksBalancer?.Stop(); _socksBalancer = null; } catch { /* ignore */ }
 
             List<HysteriaEngine> toStop;
