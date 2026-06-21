@@ -1,4 +1,5 @@
 using KighmuVpnWindows.Profiles;
+using System.Diagnostics;
 using KighmuVpnWindows.Utils;
 using System;
 using System.Collections.Generic;
