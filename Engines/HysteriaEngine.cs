@@ -87,17 +87,26 @@ namespace KighmuVpnWindows.Engines
             try { _hysteriaProcess?.Kill(); } catch { /* ignore */ }
             _hysteriaProcess = null;
 
+            KighmuLogger.Info(TAG, $"Lancement hysteria.exe: {binary} client --config {configFile}");
             StartHysteriaProcess(binary, configFile);
 
-            // Attendre connexion serveur via les logs (max 15s, comme côté Android)
+            // Attendre connexion serveur via les logs (max 15s)
+            KighmuLogger.Info(TAG, $"Attente connexion Hysteria (max 15s) port={_socksPort}...");
             for (int i = 0; i < 30 && !_serverConnected; i++)
             {
-                if (_hysteriaProcess == null || _hysteriaProcess.HasExited) break;
+                if (_hysteriaProcess == null || _hysteriaProcess.HasExited)
+                {
+                    KighmuLogger.Error(TAG, $"Hysteria process mort prematurement a {i*500}ms exit={_hysteriaProcess?.ExitCode}");
+                    break;
+                }
+                if (i % 4 == 0) KighmuLogger.Info(TAG, $"Attente Hysteria... {i*500}ms serverConnected={_serverConnected} socksPort={_socksPort}");
                 await Task.Delay(500);
             }
 
+            KighmuLogger.Info(TAG, $"Fin attente: serverConnected={_serverConnected} socksPort={_socksPort} processAlive={_hysteriaProcess != null && !_hysteriaProcess.HasExited}");
+
             if (!_serverConnected)
-                throw new Exception("Hysteria: connexion serveur impossible");
+                throw new Exception($"Hysteria: connexion serveur impossible (port={_socksPort})");
 
             KighmuLogger.Info(TAG, $"Hysteria prêt sur port {_socksPort} ✅");
             return _socksPort;
@@ -155,6 +164,7 @@ namespace KighmuVpnWindows.Engines
                 if (e.Data == null || !_running) return;
                 string lineLower = e.Data.ToLowerInvariant();
 
+                KighmuLogger.Info(TAG, $"[stdout] {e.Data}");
                 bool looksConnected = lineLower.Contains("connected") ||
                     (lineLower.Contains("socks5") && e.Data.Contains("127.0.0.1:")) ||
                     (lineLower.Contains("udp") && (lineLower.Contains("session") || lineLower.Contains("running")));
@@ -179,6 +189,7 @@ namespace KighmuVpnWindows.Engines
             {
                 if (e.Data == null || !_running) return;
                 string lineLowerErr = e.Data.ToLowerInvariant();
+                KighmuLogger.Info(TAG, $"[stderr] {e.Data}");
                 bool looksConnectedErr = lineLowerErr.Contains("connected") ||
                     (lineLowerErr.Contains("socks5") && e.Data.Contains("127.0.0.1:")) ||
                     (lineLowerErr.Contains("udp") && (lineLowerErr.Contains("session") || lineLowerErr.Contains("running")));
@@ -211,7 +222,11 @@ namespace KighmuVpnWindows.Engines
         /// vers le SOCKS5 local (127.0.0.1:_socksPort).
         /// Remplace HevTun2Socks (lib native Android) par un process séparé.
         /// </summary>
-        public void StartTun2Socks(string tunAdapterName) => StartTun2SocksOnPort(tunAdapterName, _socksPort);
+        public void StartTun2Socks(string tunAdapterName)
+        {
+            KighmuLogger.Info(TAG, $"StartTun2Socks: adapter={tunAdapterName} socksPort={_socksPort} serverConnected={_serverConnected}");
+            StartTun2SocksOnPort(tunAdapterName, _socksPort);
+        }
 
         /// <summary>
         /// Variante permettant de forcer un port cible précis (utilisé par
@@ -220,6 +235,7 @@ namespace KighmuVpnWindows.Engines
         /// </summary>
         public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
+            KighmuLogger.Info(TAG, $"StartTun2SocksOnPort: adapter={tunAdapterName} targetPort={targetPort}");
             _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG);
         }
 

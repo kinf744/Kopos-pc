@@ -26,6 +26,38 @@ namespace KighmuVpnWindows.Vpn
         /// </summary>
         private static List<string> _excludedServerIps = new List<string>();
 
+        /// <summary>
+        /// Ajoute les routes d'exclusion pour les IPs serveur AVANT de demarrer tun2socks.
+        /// Appele avant StartTun2Socks pour eviter la boucle UDP (Hysteria, etc).
+        /// </summary>
+        public static void AddServerExclusions(string serverIp)
+        {
+            try
+            {
+                string? originalGateway = GetDefaultGateway();
+                if (string.IsNullOrWhiteSpace(originalGateway))
+                {
+                    KighmuLogger.Warn(TAG, "Passerelle introuvable pour AddServerExclusions");
+                    return;
+                }
+                var ips = serverIp.Split(',')
+                    .Select(s => s.Trim())
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Distinct();
+                foreach (var ip in ips)
+                {
+                    RunCommand("route", $"add {ip} mask 255.255.255.255 {originalGateway} metric 1");
+                    if (!_excludedServerIps.Contains(ip))
+                        _excludedServerIps.Add(ip);
+                    KighmuLogger.Info(TAG, $"Pre-exclusion: {ip}/32 via {originalGateway}");
+                }
+            }
+            catch (Exception ex)
+            {
+                KighmuLogger.Error(TAG, $"AddServerExclusions erreur: {ex.Message}");
+            }
+        }
+
         public static bool ApplyRoutes(string adapterName, string? serverIp = null, string tunnelLocalIp = "198.18.0.1", string dnsServer = "8.8.8.8")
         {
             try

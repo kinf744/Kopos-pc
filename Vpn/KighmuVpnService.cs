@@ -59,14 +59,24 @@ namespace KighmuVpnWindows.Vpn
                 int proxyPort = await _engine.Start();
                 KighmuLogger.Info(TAG, $"Engine demarre sur port {proxyPort}");
 
-                // 3. Demarrer tun2socks vers l'adaptateur Wintun
+                // 3. Exclure IP serveur AVANT de demarrer tun2socks
+                // Garantit que les paquets UDP (Hysteria) ne sont pas captures par le tunnel
+                string? serverIp = _engine.ServerIp;
+                if (!string.IsNullOrWhiteSpace(serverIp))
+                {
+                    RouteManager.AddServerExclusions(serverIp);
+                    KighmuLogger.Info(TAG, $"Routes exclusion pre-appliquees pour: {serverIp}");
+                    await Task.Delay(300);
+                }
+
+                // 4. Demarrer tun2socks vers l'adaptateur Wintun
                 _engine.StartTun2Socks(TUN_ADAPTER);
                 KighmuLogger.Info(TAG, $"tun2socks demarre sur adaptateur [{TUN_ADAPTER}]");
 
-                // 4. Configurer le routage systeme Windows (force tout le trafic -> tunnel)
+                // 5. Configurer le routage systeme Windows (force tout le trafic -> tunnel)
                 // Attendre que hev-socks5-tunnel ait cree l'adaptateur Wintun (max 5s)
                 await Task.Delay(1500);
-                bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER, serverIp: _engine.ServerIp, dnsServer: "8.8.8.8");
+                bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER, serverIp: serverIp, dnsServer: "8.8.8.8");
                 if (!routesOk)
                     throw new Exception("Impossible de configurer le routage systeme (verifiez les droits administrateur).");
 
