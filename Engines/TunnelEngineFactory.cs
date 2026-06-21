@@ -166,7 +166,8 @@ namespace KighmuVpnWindows.Engines
                     AuthPassword  = p0.AuthPassword,
                     Sni           = p0.Sni,
                     Obfs          = p0.Obfs,
-                    ObfsPassword  = p0.ObfsPassword
+                    ObfsPassword  = p0.ObfsPassword,
+                    PortHopping   = p0.PortHopping
                 });
 
             // MultiHysteriaEngine charge ses profils lui-meme, on passe la config du 1er comme fallback
@@ -176,7 +177,8 @@ namespace KighmuVpnWindows.Engines
                 AuthPassword  = p0.AuthPassword,
                 Sni           = p0.Sni,
                 Obfs          = p0.Obfs,
-                ObfsPassword  = p0.ObfsPassword
+                ObfsPassword  = p0.ObfsPassword,
+                PortHopping   = p0.PortHopping
             });
         }
     }
