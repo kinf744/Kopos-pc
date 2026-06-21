@@ -176,7 +176,7 @@ namespace KighmuVpnWindows.Engines
             }
             if (!xrayReady) throw new Exception("Xray DNS n'a pas demarre dans les temps");
 
-            KighmuLogger.Info(TAG, $"XrayDnsEngine pret port={SocksPort}");
+            KighmuLogger.Info(TAG, $"XrayDnsEngine pret port={SocksPort} dnsttPort={DnsttPort} serverIp={_resolvedServerIp}");
             return SocksPort;
         }
 
@@ -313,6 +313,7 @@ namespace KighmuVpnWindows.Engines
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, fileName);
             File.WriteAllText(path, jsonConfig);
+            KighmuLogger.Info(TAG, $"Config Xray ecrite ({path}):\n{jsonConfig}");
             return path;
         }
 

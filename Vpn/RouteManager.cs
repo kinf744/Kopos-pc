@@ -83,6 +83,7 @@ namespace KighmuVpnWindows.Vpn
             try
             {
                 string output = RunCommandCapture("route", "print -4 0.0.0.0");
+                KighmuLogger.Info(TAG, $"route print output:\n{output}");
                 foreach (var rawLine in output.Split('\n'))
                 {
                     var line = rawLine.Trim();
@@ -91,9 +92,13 @@ namespace KighmuVpnWindows.Vpn
                         var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         // Format: 0.0.0.0  0.0.0.0  <gateway>  <interface>  <metric>
                         if (parts.Length >= 3 && parts[2].Contains("."))
+                        {
+                            KighmuLogger.Info(TAG, $"Passerelle detectee: {parts[2]}");
                             return parts[2];
+                        }
                     }
                 }
+                KighmuLogger.Warn(TAG, "Aucune ligne 0.0.0.0 trouvee dans route print");
             }
             catch (Exception ex)
             {
@@ -145,6 +150,7 @@ namespace KighmuVpnWindows.Vpn
 
         private static void RunCommand(string exe, string args)
         {
+            KighmuLogger.Info(TAG, $"CMD: {exe} {args}");
             var psi = new ProcessStartInfo
             {
                 FileName = exe,
@@ -158,8 +164,9 @@ namespace KighmuVpnWindows.Vpn
             string stdout = p!.StandardOutput.ReadToEnd();
             string stderr = p.StandardError.ReadToEnd();
             p.WaitForExit();
-            if (!string.IsNullOrWhiteSpace(stdout)) KighmuLogger.Info(TAG, stdout.Trim());
-            if (!string.IsNullOrWhiteSpace(stderr)) KighmuLogger.Info(TAG, stderr.Trim());
+            KighmuLogger.Info(TAG, $"CMD exit code: {p.ExitCode}");
+            if (!string.IsNullOrWhiteSpace(stdout)) KighmuLogger.Info(TAG, $"stdout: {stdout.Trim()}");
+            if (!string.IsNullOrWhiteSpace(stderr)) KighmuLogger.Info(TAG, $"stderr: {stderr.Trim()}");
         }
 
         private static string RunCommandCapture(string exe, string args)

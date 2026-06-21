@@ -62,6 +62,22 @@ namespace KighmuVpnWindows.Engines
                 process.BeginErrorReadLine();
 
                 KighmuLogger.Info(TAG, $"hev-socks5-tunnel demarre port={socksPort} adapter={tunAdapterName} PID={process.Id}");
+                KighmuLogger.Info(TAG, $"Contenu YAML envoye a hev-socks5-tunnel:\n{yaml}");
+
+                // Verification differee : le process est-il toujours vivant apres 2s ?
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    await System.Threading.Tasks.Task.Delay(2000);
+                    try
+                    {
+                        if (process.HasExited)
+                            KighmuLogger.Error(TAG, $"hev-socks5-tunnel s'est arrete prematurement, exit code={process.ExitCode}");
+                        else
+                            KighmuLogger.Info(TAG, "hev-socks5-tunnel toujours actif apres 2s");
+                    }
+                    catch { }
+                });
+
                 return process;
             }
             catch (Exception ex)
