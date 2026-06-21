@@ -130,8 +130,7 @@ namespace KighmuVpnWindows.Vpn
             try
             {
                 string output = RunCommandCapture("netsh", "interface ipv4 show interfaces");
-                foreach (var rawLine in output.Split('
-'))
+                foreach (var rawLine in output.Split('\n'))
                 {
                     var line = rawLine.Trim();
                     // Chercher Ethernet ou Wi-Fi (pas Loopback, pas KighmuVPN, pas tunnel)
