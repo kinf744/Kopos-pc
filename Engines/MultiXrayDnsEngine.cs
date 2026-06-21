@@ -259,20 +259,38 @@ namespace KighmuVpnWindows.Engines
             KighmuLogger.Info(TAG, "Arret MultiXrayDnsEngine...");
             try { _cts?.Cancel(); } catch { }
             try { _socksBalancer?.Stop(); _socksBalancer = null; } catch { }
-            lock (_xrayLock)
-            {
-                foreach (var e in _xrayEngines)
-                    try { e.Stop().GetAwaiter().GetResult(); } catch { }
-                _xrayEngines.Clear();
-            }
-            lock (_dnsttLock)
-            {
-                foreach (var e in _dnsttEngines)
-                    try { e.Stop().GetAwaiter().GetResult(); } catch { }
-                _dnsttEngines.Clear();
-            }
+
+            // Arreter tun2socks en premier
             Tun2SocksHelper.Stop(_tun2socksProcess, "xraydns_multi");
             _tun2socksProcess = null;
+
+            // Arreter xray engines en parallele (sans bloquer le thread UI)
+            List<XrayDnsEngine> xraySnapshot;
+            lock (_xrayLock)
+            {
+                xraySnapshot = new List<XrayDnsEngine>(_xrayEngines);
+                _xrayEngines.Clear();
+            }
+            await Task.Run(() =>
+            {
+                foreach (var e in xraySnapshot)
+                    try { e.Stop().GetAwaiter().GetResult(); } catch { }
+            });
+
+            // Arreter dnstt engines en parallele
+            List<SlowDnsEngine> dnsttSnapshot;
+            lock (_dnsttLock)
+            {
+                dnsttSnapshot = new List<SlowDnsEngine>(_dnsttEngines);
+                _dnsttEngines.Clear();
+            }
+            await Task.Run(() =>
+            {
+                foreach (var e in dnsttSnapshot)
+                    try { e.Stop().GetAwaiter().GetResult(); } catch { }
+            });
+
+            lock (_fluxConfigs) { _fluxConfigs.Clear(); }
             KighmuLogger.Info(TAG, "MultiXrayDnsEngine arrete");
         }
 
