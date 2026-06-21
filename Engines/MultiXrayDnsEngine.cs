@@ -2,6 +2,7 @@ using KighmuVpnWindows.Profiles;
 using KighmuVpnWindows.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,8 +16,22 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class MultiXrayDnsEngine : ITunnelEngine
     {
-        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
-        public string? ServerIp => null;
+        /// <summary>IPs des resolveurs DNS (un ou plusieurs profils), separees par virgule.</summary>
+        public string? ServerIp
+        {
+            get
+            {
+                lock (_dnsttLock)
+                {
+                    var ips = _dnsttEngines
+                        .Select(e => e.ServerIp)
+                        .Where(ip => !string.IsNullOrWhiteSpace(ip))
+                        .Distinct()
+                        .ToList();
+                    return ips.Count > 0 ? string.Join(",", ips) : null;
+                }
+            }
+        }
 
         private const string TAG               = "MultiXrayDns";
         private const int    MAX_RETRIES       = 30;

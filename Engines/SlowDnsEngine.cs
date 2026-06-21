@@ -18,8 +18,9 @@ namespace KighmuVpnWindows.Engines
     /// </summary>
     public class SlowDnsEngine : ITunnelEngine
     {
-        /// <summary>IP serveur a exclure des routes systeme (null = pas d'exclusion).</summary>
-        public string? ServerIp => null;
+        private string? _resolvedServerIp;
+        /// <summary>IP serveur (resolver DNS) a exclure des routes systeme.</summary>
+        public string? ServerIp => _resolvedServerIp;
 
         private const string TAG = "SlowDnsEngine";
         public const int BASE_SOCKS_PORT = 10800;
@@ -158,6 +159,19 @@ namespace KighmuVpnWindows.Engines
 
         private void StartDnsttProcess(string bin)
         {
+            try
+            {
+                var entry = System.Net.Dns.GetHostEntry(_dns.DnsServer);
+                _resolvedServerIp = entry.AddressList.Length > 0
+                    ? entry.AddressList[0].ToString()
+                    : _dns.DnsServer;
+            }
+            catch
+            {
+                _resolvedServerIp = _dns.DnsServer;
+            }
+            KighmuLogger.Info(TAG, $"IP resolveur DNS (dnstt): {_resolvedServerIp}");
+
             string args = $"-udp {_dns.DnsServer}:{_dns.DnsPort} -pubkey {CleanPublicKey} {_dns.Nameserver} 127.0.0.1:{DnsttPort}";
 
             var psi = new ProcessStartInfo

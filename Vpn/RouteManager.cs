@@ -1,5 +1,6 @@
 using KighmuVpnWindows.Utils;
 using System;
+using System.Linq;
 using System.Diagnostics;
 using System.Threading;
 
@@ -22,7 +23,7 @@ namespace KighmuVpnWindows.Vpn
         /// Applique les routes systeme + DNS sur l'adaptateur tunnel.
         /// Attend que l'adaptateur soit pret (jusqu'a 5s) avant de configurer.
         /// </summary>
-        private static string? _excludedServerIp;
+        private static List<string> _excludedServerIps = new List<string>();
 
         public static bool ApplyRoutes(string adapterName, string? serverIp = null, string tunnelLocalIp = "198.18.0.1", string dnsServer = "8.8.8.8")
         {
@@ -35,9 +36,17 @@ namespace KighmuVpnWindows.Vpn
                     string? originalGateway = GetDefaultGateway();
                     if (!string.IsNullOrWhiteSpace(originalGateway))
                     {
-                        RunCommand("route", $"add {serverIp} mask 255.255.255.255 {originalGateway} metric 1");
-                        _excludedServerIp = serverIp;
-                        KighmuLogger.Info(TAG, $"Route exclusion ajoutee: {serverIp}/32 via passerelle d'origine {originalGateway} (evite boucle tunnel).");
+                        var ips = serverIp.Split(',')
+                            .Select(s => s.Trim())
+                            .Where(s => !string.IsNullOrWhiteSpace(s))
+                            .Distinct();
+
+                        foreach (var ip in ips)
+                        {
+                            RunCommand("route", $"add {ip} mask 255.255.255.255 {originalGateway} metric 1");
+                            _excludedServerIps.Add(ip);
+                            KighmuLogger.Info(TAG, $"Route exclusion ajoutee: {ip}/32 via passerelle d'origine {originalGateway} (evite boucle tunnel).");
+                        }
                     }
                     else
                     {
@@ -117,12 +126,12 @@ namespace KighmuVpnWindows.Vpn
                 RunCommand("route", $"delete 0.0.0.0 mask 128.0.0.0 {tunnelLocalIp}");
                 RunCommand("route", $"delete 128.0.0.0 mask 128.0.0.0 {tunnelLocalIp}");
 
-                if (!string.IsNullOrWhiteSpace(_excludedServerIp))
+                foreach (var ip in _excludedServerIps)
                 {
-                    RunCommand("route", $"delete {_excludedServerIp} mask 255.255.255.255");
-                    KighmuLogger.Info(TAG, $"Route exclusion supprimee: {_excludedServerIp}/32");
-                    _excludedServerIp = null;
+                    RunCommand("route", $"delete {ip} mask 255.255.255.255");
+                    KighmuLogger.Info(TAG, $"Route exclusion supprimee: {ip}/32");
                 }
+                _excludedServerIps.Clear();
 
                 KighmuLogger.Info(TAG, "Routes systeme supprimees.");
             }
