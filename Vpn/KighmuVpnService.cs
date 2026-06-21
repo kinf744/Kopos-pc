@@ -66,7 +66,7 @@ namespace KighmuVpnWindows.Vpn
                 // 4. Configurer le routage systeme Windows (force tout le trafic -> tunnel)
                 // Attendre que hev-socks5-tunnel ait cree l'adaptateur Wintun (max 5s)
                 await Task.Delay(1500);
-                bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER, dnsServer: "198.18.0.1");
+                bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER, serverIp: _engine.ServerIp, dnsServer: "8.8.8.8");
                 if (!routesOk)
                     throw new Exception("Impossible de configurer le routage systeme (verifiez les droits administrateur).");
 

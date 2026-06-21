@@ -27,6 +27,9 @@ namespace KighmuVpnWindows.Engines
 
         private volatile bool _running;
         private volatile bool _serverConnected;
+        private string? _resolvedServerIp;
+
+        public string? ServerIp => _resolvedServerIp;
         private Process? _hysteriaProcess;
         private Process? _tun2socksProcess;
         private int _socksPort;
@@ -70,6 +73,7 @@ namespace KighmuVpnWindows.Engines
             {
                 ip = _config.ServerAddress;
             }
+            _resolvedServerIp = ip;
 
             string portHopping = string.IsNullOrWhiteSpace(_config.PortHopping) ? "20000-50000" : _config.PortHopping;
             string server = $"{ip}:{portHopping}";

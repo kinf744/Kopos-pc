@@ -22,10 +22,29 @@ namespace KighmuVpnWindows.Vpn
         /// Applique les routes systeme + DNS sur l'adaptateur tunnel.
         /// Attend que l'adaptateur soit pret (jusqu'a 5s) avant de configurer.
         /// </summary>
-        public static bool ApplyRoutes(string adapterName, string tunnelLocalIp = "198.18.0.1", string dnsServer = "1.1.1.1")
+        private static string? _excludedServerIp;
+
+        public static bool ApplyRoutes(string adapterName, string? serverIp = null, string tunnelLocalIp = "198.18.0.1", string dnsServer = "8.8.8.8")
         {
             try
             {
+                // 1. Recuperer la passerelle Internet d'origine AVANT de poser les routes tunnel
+                //    (equivalent du comportement implicite d'Android qui exclut le socket du moteur du VPN)
+                if (!string.IsNullOrWhiteSpace(serverIp))
+                {
+                    string? originalGateway = GetDefaultGateway();
+                    if (!string.IsNullOrWhiteSpace(originalGateway))
+                    {
+                        RunCommand("route", $"add {serverIp} mask 255.255.255.255 {originalGateway} metric 1");
+                        _excludedServerIp = serverIp;
+                        KighmuLogger.Info(TAG, $"Route exclusion ajoutee: {serverIp}/32 via passerelle d'origine {originalGateway} (evite boucle tunnel).");
+                    }
+                    else
+                    {
+                        KighmuLogger.Warn(TAG, "Passerelle d'origine introuvable - impossible d'exclure l'IP serveur. Risque de boucle de routage.");
+                    }
+                }
+
                 int? idx = null;
                 for (int i = 0; i < 10 && idx == null; i++)
                 {
@@ -45,7 +64,7 @@ namespace KighmuVpnWindows.Vpn
                 RunCommand("route", $"add 128.0.0.0 mask 128.0.0.0 {tunnelLocalIp} metric 1 if {idx}");
                 RunCommand("netsh", $"interface ip set dns name=\"{adapterName}\" static {dnsServer}");
 
-                KighmuLogger.Info(TAG, "Routes systeme appliquees (tout le trafic -> tunnel).");
+                KighmuLogger.Info(TAG, "Routes systeme appliquees (tout le trafic -> tunnel, sauf IP serveur).");
                 return true;
             }
             catch (Exception ex)
@@ -53,6 +72,34 @@ namespace KighmuVpnWindows.Vpn
                 KighmuLogger.Error(TAG, $"Erreur application routes: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Recupere l'IP de la passerelle par defaut active AVANT que le tunnel ne soit cree.
+        /// Doit etre appele avant ApplyRoutes pour capturer la vraie passerelle Internet.
+        /// </summary>
+        private static string? GetDefaultGateway()
+        {
+            try
+            {
+                string output = RunCommandCapture("route", "print -4 0.0.0.0");
+                foreach (var rawLine in output.Split('\n'))
+                {
+                    var line = rawLine.Trim();
+                    if (line.StartsWith("0.0.0.0"))
+                    {
+                        var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        // Format: 0.0.0.0  0.0.0.0  <gateway>  <interface>  <metric>
+                        if (parts.Length >= 3 && parts[2].Contains("."))
+                            return parts[2];
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                KighmuLogger.Error(TAG, $"Erreur lecture passerelle par defaut: {ex.Message}");
+            }
+            return null;
         }
 
         /// <summary>
@@ -64,6 +111,14 @@ namespace KighmuVpnWindows.Vpn
             {
                 RunCommand("route", $"delete 0.0.0.0 mask 128.0.0.0 {tunnelLocalIp}");
                 RunCommand("route", $"delete 128.0.0.0 mask 128.0.0.0 {tunnelLocalIp}");
+
+                if (!string.IsNullOrWhiteSpace(_excludedServerIp))
+                {
+                    RunCommand("route", $"delete {_excludedServerIp} mask 255.255.255.255");
+                    KighmuLogger.Info(TAG, $"Route exclusion supprimee: {_excludedServerIp}/32");
+                    _excludedServerIp = null;
+                }
+
                 KighmuLogger.Info(TAG, "Routes systeme supprimees.");
             }
             catch (Exception ex)

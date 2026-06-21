@@ -49,6 +49,8 @@ namespace KighmuVpnWindows.Engines
         }
 
         private volatile bool _running;
+        private string? _resolvedServerIp;
+        public string? ServerIp => _resolvedServerIp;
         private Process?      _xrayProcess;
         private Process?      _dnsttProcess;
         private Process?      _tun2socksProcess;
@@ -96,6 +98,21 @@ namespace KighmuVpnWindows.Engines
         {
             _running = true;
             KighmuLogger.Info(TAG, "Demarrage XrayDnsEngine (Mode 5)...");
+
+            // Resoudre l'IP du resolveur DNS (cible reelle des paquets UDP de dnstt-client)
+            // pour permettre son exclusion des routes systeme (evite boucle de routage)
+            try
+            {
+                var entry = await System.Net.Dns.GetHostEntryAsync(_profile.DnsServer);
+                _resolvedServerIp = entry.AddressList.Length > 0
+                    ? entry.AddressList[0].ToString()
+                    : _profile.DnsServer;
+            }
+            catch
+            {
+                _resolvedServerIp = _profile.DnsServer;
+            }
+            KighmuLogger.Info(TAG, $"IP resolveur DNS (dnstt): {_resolvedServerIp}");
 
             // ── Phase 1 : dnstt (sauf si port externe fourni) ───────────────────
             if (_externalDnsttPort > 0)
