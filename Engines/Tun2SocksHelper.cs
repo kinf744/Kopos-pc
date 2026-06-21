@@ -100,7 +100,8 @@ namespace KighmuVpnWindows.Engines
             }
             // hev-socks5-tunnel ne supporte qu'un seul port SOCKS5
             // On utilise le SocksBalancer qui expose un seul port agregateur
-            return Start(tunAdapterName, socksPorts[0], instanceId);
+            int balancerPort = SocksBalancer.BalancerPort > 0 ? SocksBalancer.BalancerPort : socksPorts[0];
+            return Start(tunAdapterName, balancerPort, instanceId);
         }
 
         /// <summary>

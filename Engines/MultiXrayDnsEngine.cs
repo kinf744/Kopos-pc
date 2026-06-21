@@ -242,18 +242,16 @@ namespace KighmuVpnWindows.Engines
             return finalPort;
         }
 
+        private Process? _tun2socksProcess;
+
         public void StartTun2Socks(string tunAdapterName)
         {
             int targetPort = _activePorts.Count > 1 ? SocksBalancer.BalancerPort
                            : _activePorts.Count > 0 ? _activePorts[0]
                            : throw new Exception("Aucun port actif");
 
-            lock (_xrayLock)
-            {
-                if (_xrayEngines.Count > 0)
-                    _xrayEngines[0].StartTun2SocksOnPort(tunAdapterName, targetPort);
-            }
-            KighmuLogger.Info(TAG, $"tun2socks V2Ray+SlowDNS port={targetPort}");
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, "xraydns_multi");
+            KighmuLogger.Info(TAG, $"tun2socks V2Ray+DNS multi demarre port={targetPort}");
         }
 
         public async Task Stop()
@@ -273,6 +271,8 @@ namespace KighmuVpnWindows.Engines
                     try { e.Stop().GetAwaiter().GetResult(); } catch { }
                 _dnsttEngines.Clear();
             }
+            Tun2SocksHelper.Stop(_tun2socksProcess, "xraydns_multi");
+            _tun2socksProcess = null;
             KighmuLogger.Info(TAG, "MultiXrayDnsEngine arrete");
         }
 
