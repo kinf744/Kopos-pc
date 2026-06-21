@@ -2,6 +2,7 @@ using KighmuVpnWindows.Models;
 using KighmuVpnWindows.Profiles;
 using KighmuVpnWindows.Utils;
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -47,6 +48,7 @@ namespace KighmuVpnWindows.Engines
         private SocksBalancer? _socksBalancer;
         private volatile int _replacingCount = 0;
         private CancellationTokenSource? _monitorCts;
+        private Process? _tun2socksProcess;
 
         public MultiSlowDnsEngine(SlowDnsConfig baseConfig, string baseSshUser, string baseSshPass)
         {
@@ -305,32 +307,16 @@ namespace KighmuVpnWindows.Engines
 
         public void StartTun2Socks(string tunAdapterName)
         {
-            int balancerPort = SocksBalancer.BalancerPort;
-            try
-            {
-                List<SlowDnsEngine> running;
-                lock (_enginesLock) { running = _engines.Where(e => e.IsRunning()).ToList(); }
-                var firstEngine = running.FirstOrDefault() ?? _engines.FirstOrDefault();
-
-                if (firstEngine != null)
-                {
-                    KighmuLogger.Info(TAG, $"tun2socks SlowDNS -> port={balancerPort} adapter={tunAdapterName}");
-                    firstEngine.StartTun2SocksOnPort(tunAdapterName, balancerPort);
-                }
-                else
-                {
-                    KighmuLogger.Error(TAG, "Aucune session disponible pour tun2socks!");
-                }
-            }
-            catch (Exception ex)
-            {
-                KighmuLogger.Error(TAG, $"StartTun2Socks erreur: {ex.Message}");
-            }
+            int targetPort = _activePort > 0 ? _activePort : SocksBalancer.BalancerPort;
+            KighmuLogger.Info(TAG, $"tun2socks SlowDNS -> port={targetPort} adapter={tunAdapterName}");
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, "slowdns_multi");
         }
 
         public async Task Stop()
         {
             KighmuLogger.Info(TAG, $"Arret de {_engines.Count} session(s)...");
+            Tun2SocksHelper.Stop(_tun2socksProcess, "slowdns_multi");
+            _tun2socksProcess = null;
 
             try { _socksBalancer?.Stop(); _socksBalancer = null; } catch { /* ignore */ }
             try { _monitorCts?.Cancel(); } catch { /* ignore */ }
