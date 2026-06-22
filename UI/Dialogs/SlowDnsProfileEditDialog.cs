@@ -80,6 +80,7 @@ namespace KighmuVpnWindows.UI.Dialogs
 
             Label("SLOWDNS CONFIGURATION");
             var etDns    = Field("DNS Server", p.DnsServer);
+            var etDnsPort = Field("DNS Port", p.DnsPort.ToString());
             var etNs     = Field("Nameserver", p.Nameserver);
             var etPubKey = Field("Public Key", p.PublicKey);
 
@@ -145,6 +146,7 @@ namespace KighmuVpnWindows.UI.Dialogs
                     SshUser       = etSshUser.Text,
                     SshPass       = etSshPass.Text,
                     DnsServer     = string.IsNullOrWhiteSpace(etDns.Text) ? "8.8.8.8" : etDns.Text,
+                    DnsPort       = int.TryParse(etDnsPort.Text, out var dp) ? dp : 53,
                     Nameserver    = etNs.Text,
                     PublicKey     = etPubKey.Text,
                     ProxyHost     = etProxyHost.Text,

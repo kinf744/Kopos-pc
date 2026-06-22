@@ -18,6 +18,7 @@ namespace KighmuVpnWindows.Profiles
 
         // SlowDNS
         [JsonProperty("dnsServer")] public string DnsServer { get; set; } = "8.8.8.8";
+        [JsonProperty("dnsPort")] public int DnsPort { get; set; } = 53;
         [JsonProperty("nameserver")] public string Nameserver { get; set; } = "";
         [JsonProperty("publicKey")] public string PublicKey { get; set; } = "";
 

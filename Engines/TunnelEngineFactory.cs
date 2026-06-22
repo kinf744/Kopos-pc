@@ -58,6 +58,7 @@ namespace KighmuVpnWindows.Engines
             var p0 = profiles[0];
             var cfg = new SlowDnsConfig {
                 DnsServer  = p0.DnsServer,
+                DnsPort    = p0.DnsPort,
                 Nameserver = p0.Nameserver,
                 PublicKey  = p0.PublicKey
             };
