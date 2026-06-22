@@ -129,7 +129,7 @@ namespace KighmuVpnWindows.Engines
 
                 // Attendre que dnstt soit prêt (max 8s, check toutes les 200ms)
                 int waited = 0;
-                while (waited < 8000)
+                while (waited < 12000)
                 {
                     await Task.Delay(200);
                     waited += 200;
@@ -243,6 +243,14 @@ namespace KighmuVpnWindows.Engines
                     if (e.Data.Contains(p)) { skip = true; break; }
                 if (!skip) KighmuLogger.Info(TAG, $"dnstt: {e.Data}");
             };
+            _dnsttProcess.ErrorDataReceived += (s, e) =>
+            {
+                if (e.Data == null || !_running) return;
+                bool skip = false;
+                foreach (var p in skipPatterns)
+                    if (e.Data.Contains(p)) { skip = true; break; }
+                if (!skip) KighmuLogger.Info(TAG, $"dnstt-err: {e.Data}");
+            };
 
             _dnsttProcess.Start();
             _dnsttProcess.BeginOutputReadLine();
@@ -259,7 +267,7 @@ namespace KighmuVpnWindows.Engines
             var connInfo = new ConnectionInfo("127.0.0.1", DnsttPort, _sshUser,
                 new PasswordAuthenticationMethod(_sshUser, _sshPass))
             {
-                Timeout = TimeSpan.FromSeconds(6)
+                Timeout = TimeSpan.FromSeconds(20)
             };
 
             var client = new SshClient(connInfo);
