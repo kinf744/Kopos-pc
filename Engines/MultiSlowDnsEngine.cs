@@ -342,6 +342,7 @@ namespace KighmuVpnWindows.Engines
             cfg.SshUser = p.SshUser;
             cfg.SshPass = p.SshPass;
             cfg.DnsServer = p.DnsServer;
+            cfg.DnsPort = p.DnsPort;
             cfg.Nameserver = p.Nameserver;
             cfg.PublicKey = (p.PublicKey ?? "").Trim().Replace(" ", "").Replace("\n", "").Replace("\r", "").Replace("\t", "");
             return cfg;
