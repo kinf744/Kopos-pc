@@ -332,6 +332,13 @@ namespace KighmuVpnWindows.Engines
             };
 
             var client = new SshClient(connInfo);
+            client.Banner += (sender, e) =>
+            {
+                var msg = e.BannerMessage ?? "";
+                foreach (var line in msg.Split(new[] { '', '
+' }, StringSplitOptions.RemoveEmptyEntries))
+                    KighmuLogger.Info(TAG, $"[SSH BANNER] {line}");
+            };
             client.Connect();
 
             if (!client.IsConnected) throw new Exception($"SSH auth echoue pour {_sshUser}");

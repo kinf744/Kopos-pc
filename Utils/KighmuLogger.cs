@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace KighmuVpnWindows.Utils
 {
@@ -53,10 +54,15 @@ namespace KighmuVpnWindows.Utils
         public static void Warning(string tag, string message) => Write("WARN", tag, message);
         public static void Warn(string tag, string message) => Write("WARN", tag, message); // alias
 
+        /// <summary>Supprime les sequences ANSI (couleurs, curseur) pour affichage propre dans WPF TextBlock.</summary>
+        private static string StripAnsi(string text) =>
+            Regex.Replace(text ?? "", @"\x1B\[[0-9;]*[mKHFABCDJsu]|\x1B\([A-Z]|\x1B[=>]|[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "");
+
         private static void Write(string level, string tag, string message)
         {
             string ts = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            string line = $"[{ts}] [{level}] [{tag}] {message}";
+            string clean = StripAnsi(message);
+            string line = $"[{ts}] [{level}] [{tag}] {clean}";
 
             lock (_lock)
             {
