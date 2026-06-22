@@ -462,7 +462,7 @@ namespace KighmuVpnWindows.Engines
             {
                 if (!proc.HasExited)
                 {
-                    proc.Kill(entireProcessTree: true);
+                    proc.Kill();
                     if (!proc.WaitForExit(timeoutMs))
                         KighmuLogger.Warn(TAG, $"{name} n'a pas termine dans {timeoutMs}ms");
                     else
