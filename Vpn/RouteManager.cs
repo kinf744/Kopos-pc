@@ -64,33 +64,6 @@ namespace KighmuVpnWindows.Vpn
         {
             try
             {
-                // 1. Recuperer la passerelle Internet d'origine AVANT de poser les routes tunnel
-                //    (equivalent du comportement implicite d'Android qui exclut le socket du moteur du VPN)
-                if (!string.IsNullOrWhiteSpace(serverIp))
-                {
-                    string? originalGateway = GetDefaultGateway();
-                    if (!string.IsNullOrWhiteSpace(originalGateway))
-                    {
-                        var ips = serverIp.Split(',')
-                            .Select(s => s.Trim())
-                            .Where(s => !string.IsNullOrWhiteSpace(s))
-                            .Distinct();
-
-                        foreach (var ip in ips)
-                        {
-                            int physIdx3 = GetPhysicalAdapterIndex();
-                            string ifPart3 = physIdx3 > 0 ? $" if {physIdx3}" : "";
-                            RunCommand("route", $"add {ip} mask 255.255.255.255 {originalGateway} metric 1{ifPart3}");
-                            _excludedServerIps.Add(ip);
-                            KighmuLogger.Info(TAG, $"Route exclusion ajoutee: {ip}/32 via passerelle d'origine {originalGateway} (evite boucle tunnel).");
-                        }
-                    }
-                    else
-                    {
-                        KighmuLogger.Warn(TAG, "Passerelle d'origine introuvable - impossible d'exclure l'IP serveur. Risque de boucle de routage.");
-                    }
-                }
-
                 int? idx = null;
                 for (int i = 0; i < 10 && idx == null; i++)
                 {

@@ -156,7 +156,7 @@ namespace KighmuVpnWindows.Engines
                 throw new Exception($"Aucune session SlowDNS connectee sur {selected.Count} tentatives");
 
             // STEP 3 : Démarrer le balancer sur tous les ports SOCKS connectés
-            var connectedPorts = successPorts.Count > 0 ? successPorts : new List<int> { SlowDnsEngine.BASE_SOCKS_PORT };
+            var connectedPorts = successPorts;
             KighmuLogger.Info(TAG, $"Ports SOCKS actifs: [{string.Join(",", connectedPorts)}]");
 
             // Diagnostic : vérifier chaque port SOCKS avant de démarrer le balancer
@@ -186,22 +186,18 @@ namespace KighmuVpnWindows.Engines
                 }
             }
 
-            var balancer = new SocksBalancer(connectedPorts);
-            balancer.Start();
-            _socksBalancer = balancer;
-            _activePort = SocksBalancer.BalancerPort;
-
-            await Task.Delay(200);
-            try
+            if (connectedPorts.Count > 1)
             {
-                var sock = new TcpClient();
-                var connectTask = sock.ConnectAsync(IPAddress.Loopback, _activePort);
-                if (await Task.WhenAny(connectTask, Task.Delay(1000)) != connectTask || !sock.Connected)
-                    KighmuLogger.Error(TAG, $"Balancer port {_activePort}: INACCESSIBLE");
+                var balancer = new SocksBalancer(connectedPorts);
+                balancer.Start();
+                _socksBalancer = balancer;
+                _activePort = SocksBalancer.BalancerPort;
+                KighmuLogger.Info(TAG, $"Balancer actif port={_activePort} sur {connectedPorts.Count} tunnels");
             }
-            catch (Exception ex)
+            else
             {
-                KighmuLogger.Error(TAG, $"Balancer port {_activePort}: INACCESSIBLE ({ex.Message})");
+                _activePort = connectedPorts[0];
+                KighmuLogger.Info(TAG, $"1 seul tunnel actif, pas de balancer, port={_activePort}");
             }
 
             KighmuLogger.Info(TAG, $"VPN pret: {successPorts.Count} tunnels actifs port={_activePort}");

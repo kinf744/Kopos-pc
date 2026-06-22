@@ -32,9 +32,9 @@ namespace KighmuVpnWindows.Engines
         }
 
         private const string TAG              = "MultiHttpProxy";
-        private const int    MAX_RETRIES      = 20;
-        private const int    RETRY_DELAY_MS   = 2000;
-        private const int    SESSION_TIMEOUT_MS = 30000;
+        private const int    MAX_RETRIES      = 5;
+        private const int    RETRY_DELAY_MS   = 1500;
+        private const int    SESSION_TIMEOUT_MS = 15000;
 
         private readonly List<HttpProxyEngine> _engines      = new List<HttpProxyEngine>();
         private readonly object                _enginesLock  = new object();

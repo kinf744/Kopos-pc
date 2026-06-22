@@ -227,7 +227,7 @@ namespace KighmuVpnWindows.Engines
             var connInfo = new ConnectionInfo("127.0.0.1", bridgePort, _sshUser,
                 new PasswordAuthenticationMethod(_sshUser, _sshPass))
             {
-                Timeout = TimeSpan.FromSeconds(30)
+                Timeout = TimeSpan.FromSeconds(15)
             };
 
             var client = new SshClient(connInfo);

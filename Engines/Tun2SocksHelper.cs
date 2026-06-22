@@ -141,12 +141,6 @@ socks5:
   address: 127.0.0.1
   udp: 'udp'
 
-dns:
-  port: 5354
-  address: '127.0.0.1'
-  upstream: 'udp://8.8.8.8:53'
-  upstream-backup: 'udp://8.8.4.4:53'
-
 misc:
   log-level: warn
 ";
