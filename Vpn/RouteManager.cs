@@ -102,27 +102,75 @@ namespace KighmuVpnWindows.Vpn
         {
             try
             {
-                string output = RunCommandCapture("netsh", "interface ipv4 show interfaces");
+                // Methode fiable : lire la table de routage pour trouver
+                // l'interface qui porte la route par defaut (0.0.0.0)
+                // Elle est forcement connectee et active
+                string output = RunCommandCapture("route", "print -4 0.0.0.0");
                 foreach (var rawLine in output.Split('\n'))
                 {
                     var line = rawLine.Trim();
-                    // Chercher Ethernet ou Wi-Fi (pas Loopback, pas KighmuVPN, pas tunnel)
-                    if ((line.Contains("Ethernet") || line.Contains("Wi-Fi") || line.Contains("Local Area")) 
-                        && !line.Contains("KighmuVPN") && !line.Contains("Loopback") && !line.Contains("Tunnel"))
+                    if (!line.StartsWith("0.0.0.0")) continue;
+                    var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    // Format: 0.0.0.0  0.0.0.0  <gateway>  <interface_ip>  <metric>
+                    if (parts.Length < 4) continue;
+                    string ifaceIp = parts[3];
+                    // Trouver l'index de cette interface dans netsh
+                    string netsh = RunCommandCapture("netsh", "interface ipv4 show interfaces");
+                    foreach (var nLine in netsh.Split('\n'))
                     {
-                        var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length > 0 && int.TryParse(parts[0], out int idx))
+                        if (!nLine.Contains(ifaceIp) && !IsInterfaceMatchingIp(nLine.Trim(), ifaceIp)) continue;
+                        var np = nLine.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (np.Length > 0 && int.TryParse(np[0], out int idx))
                         {
-                            KighmuLogger.Info(TAG, $"Interface physique detectee: index={idx} ({line})");
+                            KighmuLogger.Info(TAG, $"Interface active detectee: index={idx} ip={ifaceIp}");
                             return idx;
                         }
                     }
+                    // Fallback : chercher par IP via ipconfig
+                    return GetAdapterIndexByIp(ifaceIp);
                 }
             }
             catch (Exception ex)
             {
                 KighmuLogger.Error(TAG, $"GetPhysicalAdapterIndex erreur: {ex.Message}");
             }
+            return 0;
+        }
+
+        private static bool IsInterfaceMatchingIp(string line, string ip) => false;
+
+        private static int GetAdapterIndexByIp(string ip)
+        {
+            try
+            {
+                string output = RunCommandCapture("route", "print -4");
+                foreach (var line in output.Split('\n'))
+                {
+                    var t = line.Trim();
+                    if (!t.StartsWith("0.0.0.0")) continue;
+                    var p = t.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (p.Length >= 5 && p[3] == ip && int.TryParse(p[4], out int metric))
+                    {
+                        // Chercher l'index via netsh en matchant l'IP
+                        string netsh = RunCommandCapture("netsh", $"interface ipv4 show addresses");
+                        var blocks = netsh.Split(new[] { "\r\n\r\n", "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var block in blocks)
+                        {
+                            if (!block.Contains(ip)) continue;
+                            // Extraire l'index depuis "Interface X"
+                            foreach (var bl in block.Split('\n'))
+                            {
+                                if (!bl.Contains("idx") && !bl.Contains("Idx")) continue;
+                                var bp = bl.Trim().Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var bv in bp)
+                                    if (int.TryParse(bv, out int bidx))
+                                        return bidx;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
             return 0;
         }
 
