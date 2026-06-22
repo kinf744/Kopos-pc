@@ -46,7 +46,7 @@ namespace KighmuVpnWindows.Engines
         {
             get
             {
-                if (_dnsttPort == 0) _dnsttPort = FindFreePort(7000 + (_profileIndex * 10));
+                if (_dnsttPort == 0) _dnsttPort = FindFreePort(17000 + (_profileIndex * 10));
                 return _dnsttPort;
             }
         }
