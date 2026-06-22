@@ -85,13 +85,31 @@ namespace KighmuVpnWindows.Engines
 
         private static int FindFreePort(int preferred)
         {
-            for (int p = preferred; p <= preferred + 20; p++)
+            // Essayer d'abord les ports proches du prefere
+            for (int p = preferred; p <= preferred + 50; p++)
                 if (IsPortFree(p)) return p;
+            // Fallback : laisser l'OS choisir un port libre
             var l = new TcpListener(IPAddress.Loopback, 0);
             l.Start();
             int port = ((IPEndPoint)l.LocalEndpoint).Port;
             l.Stop();
-            return port;
+            // Verifier que ce port est vraiment libre (double-check)
+            System.Threading.Thread.Sleep(100);
+            return IsPortFree(port) ? port : FindFreePortRandom();
+        }
+
+        private static int FindFreePortRandom()
+        {
+            for (int attempt = 0; attempt < 10; attempt++)
+            {
+                var l = new TcpListener(IPAddress.Loopback, 0);
+                l.Start();
+                int port = ((IPEndPoint)l.LocalEndpoint).Port;
+                l.Stop();
+                System.Threading.Thread.Sleep(50);
+                if (IsPortFree(port)) return port;
+            }
+            return new Random().Next(20000, 30000);
         }
 
         public async Task<int> Start()
@@ -214,6 +232,14 @@ namespace KighmuVpnWindows.Engines
                 foreach (var p in skipPatterns)
                     if (e.Data.Contains(p)) { skip = true; break; }
                 if (!skip) KighmuLogger.Info(TAG, $"dnstt: {e.Data}");
+            };
+            _dnsttProcess.ErrorDataReceived += (s, e) =>
+            {
+                if (e.Data == null || !_running) return;
+                bool skip = false;
+                foreach (var p in skipPatterns)
+                    if (e.Data.Contains(p)) { skip = true; break; }
+                if (!skip) KighmuLogger.Info(TAG, $"dnstt-err: {e.Data}");
             };
             _dnsttProcess.Start();
             _dnsttProcess.BeginOutputReadLine();
@@ -396,20 +422,86 @@ namespace KighmuVpnWindows.Engines
         public async Task Stop()
         {
             _running = false;
-            // Arret nucleaire : timeout 3s max
-            var stopTask = Task.Run(() =>
+            KighmuLogger.Info(TAG, "XrayDnsEngine: arret en cours...");
+
+            // Tuer les processus et attendre leur fin reelle (max 4s chacun)
+            await Task.Run(() =>
             {
-                try { _tun2socksProcess?.Kill(); } catch { }
-                try { _xrayProcess?.Kill(); }     catch { }
-                try { _dnsttProcess?.Kill(); }    catch { }
+                KillAndWait(_tun2socksProcess, "tun2socks", 2000);
+                KillAndWait(_xrayProcess,      "xray",      3000);
+                KillAndWait(_dnsttProcess,     "dnstt",     3000);
             });
-            await Task.WhenAny(stopTask, Task.Delay(3000));
+
             _tun2socksProcess = null;
             _xrayProcess      = null;
             _dnsttProcess     = null;
-            _socksPort        = 0;
-            _dnsttPort        = 0;
-            KighmuLogger.Info(TAG, "XrayDnsEngine arrete");
+
+            // Attendre que les sockets TCP se liberent (TIME_WAIT Windows ~4s)
+            // On attend seulement si les ports etaient utilises
+            if (_socksPort > 0 || _dnsttPort > 0)
+            {
+                KighmuLogger.Info(TAG, $"Attente liberation ports: socks={_socksPort} dnstt={_dnsttPort}");
+                await Task.Delay(1500);
+            }
+
+            // Nettoyer les fichiers de config pour forcer la regeneration
+            CleanConfigFiles();
+
+            _socksPort = 0;
+            _dnsttPort = 0;
+            KighmuLogger.Info(TAG, "XrayDnsEngine arrete proprement");
+        }
+
+        /// <summary>
+        /// Tue un processus et attend sa terminaison reelle (evite TIME_WAIT sur les ports).
+        /// </summary>
+        private static void KillAndWait(Process? proc, string name, int timeoutMs)
+        {
+            if (proc == null) return;
+            try
+            {
+                if (!proc.HasExited)
+                {
+                    proc.Kill(entireProcessTree: true);
+                    if (!proc.WaitForExit(timeoutMs))
+                        KighmuLogger.Warn(TAG, $"{name} n'a pas termine dans {timeoutMs}ms");
+                    else
+                        KighmuLogger.Info(TAG, $"{name} termine (exit={proc.ExitCode})");
+                }
+            }
+            catch (Exception ex)
+            {
+                KighmuLogger.Warn(TAG, $"KillAndWait({name}): {ex.Message}");
+            }
+            finally
+            {
+                try { proc.Dispose(); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Supprime les fichiers de config Xray pour forcer leur regeneration a la prochaine connexion.
+        /// Evite que Xray relise un fichier avec des ports obsoletes.
+        /// </summary>
+        private void CleanConfigFiles()
+        {
+            try
+            {
+                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config");
+                string fileName = _instanceId == 0
+                    ? "xraydns_config.json"
+                    : $"xraydns_config_{_instanceId}.json";
+                string path = Path.Combine(dir, fileName);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                    KighmuLogger.Info(TAG, $"Config Xray supprimee: {path}");
+                }
+            }
+            catch (Exception ex)
+            {
+                KighmuLogger.Warn(TAG, $"CleanConfigFiles: {ex.Message}");
+            }
         }
 
         public bool IsRunning() => _running

@@ -47,6 +47,14 @@ namespace KighmuVpnWindows.Vpn
                 return;
             }
 
+            // Securite : si un arret precedent a laisse des routes residuelles, les nettoyer
+            if (_status == ConnectionStatus.ERROR)
+            {
+                KighmuLogger.Info(TAG, "Nettoyage post-erreur avant reconnexion...");
+                RouteManager.RemoveRoutes();
+                await Task.Delay(500);
+            }
+
             SetStatus(ConnectionStatus.CONNECTING);
 
             try
@@ -105,6 +113,12 @@ namespace KighmuVpnWindows.Vpn
 
             try
             {
+                // 1. Supprimer les routes AVANT de tuer les processus
+                // (evite que du trafic soit route vers un tunnel mort)
+                RouteManager.RemoveRoutes();
+                KighmuLogger.Info(TAG, "Routes supprimees");
+
+                // 2. Arreter l'engine (tue les processus et attend leur fin)
                 if (_engine != null)
                 {
                     await _engine.Stop();
@@ -112,7 +126,10 @@ namespace KighmuVpnWindows.Vpn
                     KighmuLogger.Info(TAG, "Engine arrete");
                 }
 
-                RouteManager.RemoveRoutes();
+                // 3. Delai de securite : laisser Windows liberer les ressources
+                // (sockets TIME_WAIT, handles Wintun, etc.)
+                await Task.Delay(1000);
+                KighmuLogger.Info(TAG, "Ressources liberees");
             }
             catch (Exception ex)
             {
