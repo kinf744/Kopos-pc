@@ -356,19 +356,23 @@ namespace KighmuVpnWindows.Engines
         {
             _running = false;
             _sshAlive = false;
+            try { _cts?.Cancel(); } catch { /* ignore */ }
 
-            await Task.Run(() =>
+            // Arret nucleaire : timeout 3s max
+            var stopTask = Task.Run(() =>
             {
                 try { _tun2socksProcess?.Kill(); } catch { /* ignore */ }
-                try { _forwardedPort?.Stop(); } catch { /* ignore */ }
+                try { _dnsttProcess?.Kill(); }    catch { /* ignore */ }
+                try { _forwardedPort?.Stop(); }   catch { /* ignore */ }
                 try { _sshClient?.Disconnect(); _sshClient?.Dispose(); } catch { /* ignore */ }
-                try { _dnsttProcess?.Kill(); } catch { /* ignore */ }
             });
+            await Task.WhenAny(stopTask, Task.Delay(3000));
 
             _tun2socksProcess = null;
-            _sshClient = null;
-            _dnsttProcess = null;
-            try { _cts?.Cancel(); } catch { /* ignore */ }
+            _sshClient        = null;
+            _dnsttProcess     = null;
+            _dnsttPort        = 0;
+            _socksPort        = 0;
 
             KighmuLogger.Info(TAG, "SlowDNS arrete");
         }

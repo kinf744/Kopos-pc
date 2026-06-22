@@ -353,13 +353,15 @@ namespace KighmuVpnWindows.Engines
             _running  = false;
             _sshAlive = false;
             try { _cts?.Cancel(); } catch { }
-            await Task.Run(() =>
+            // Arret avec timeout 3s max (deconnexion nucleaire)
+            var stopTask = Task.Run(() =>
             {
                 try { _tun2socksProcess?.Kill(); } catch { }
+                try { _proxyTcpClient?.Close(); }      catch { }
                 try { _forwardedPort?.Stop(); }        catch { }
                 try { _sshClient?.Disconnect(); _sshClient?.Dispose(); } catch { }
-                try { _proxyTcpClient?.Close(); }      catch { }
             });
+            await Task.WhenAny(stopTask, Task.Delay(3000));
             _tun2socksProcess = null;
             _sshClient        = null;
             KighmuLogger.Info(TAG, "HttpProxyEngine arrêté");

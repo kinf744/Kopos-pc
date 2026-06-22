@@ -301,14 +301,18 @@ namespace KighmuVpnWindows.Engines
             _running  = false;
             _sshAlive = false;
             try { _cts?.Cancel(); } catch { }
-            await Task.Run(() =>
+
+            // Arret nucleaire : timeout 3s max
+            var stopTask = Task.Run(() =>
             {
                 try { _tun2socksProcess?.Kill(); } catch { }
+                try { _tlsTcpClient?.Close(); }        catch { }
+                try { _sslStream?.Close(); }           catch { }
                 try { _forwardedPort?.Stop(); }        catch { }
                 try { _sshClient?.Disconnect(); _sshClient?.Dispose(); } catch { }
-                try { _sslStream?.Close(); }           catch { }
-                try { _tlsTcpClient?.Close(); }        catch { }
             });
+            await Task.WhenAny(stopTask, Task.Delay(3000));
+
             _tun2socksProcess = null;
             _sshClient        = null;
             KighmuLogger.Info(TAG, "SshSslEngine arrete");
