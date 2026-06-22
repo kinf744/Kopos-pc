@@ -319,10 +319,12 @@ namespace KighmuVpnWindows.Engines
 
             List<SlowDnsEngine> toStop;
             lock (_enginesLock) { toStop = new List<SlowDnsEngine>(_engines); _engines.Clear(); }
-            foreach (var engine in toStop)
+            var stopTask = Task.Run(() =>
             {
-                try { await engine.Stop(); } catch { /* ignore */ }
-            }
+                foreach (var engine in toStop)
+                    try { engine.Stop().GetAwaiter().GetResult(); } catch { /* ignore */ }
+            });
+            await Task.WhenAny(stopTask, Task.Delay(3000));
 
             KighmuLogger.Info(TAG, "Toutes les ressources MultiSlowDNS liberees");
         }

@@ -196,10 +196,12 @@ namespace KighmuVpnWindows.Engines
                 toStop = new List<HysteriaEngine>(_engines);
                 _engines.Clear();
             }
-            foreach (var e in toStop)
+            var stopTask = Task.Run(() =>
             {
-                try { await e.Stop(); } catch { /* ignore */ }
-            }
+                foreach (var e in toStop)
+                    try { e.Stop().GetAwaiter().GetResult(); } catch { /* ignore */ }
+            });
+            await Task.WhenAny(stopTask, Task.Delay(3000));
 
             KighmuLogger.Info(TAG, "MultiHysteriaEngine arrete");
         }

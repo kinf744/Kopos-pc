@@ -177,11 +177,12 @@ namespace KighmuVpnWindows.Engines
                 snapshot = new List<HttpProxyEngine>(_engines);
                 _engines.Clear();
             }
-            await Task.Run(() =>
+            var stopTask = Task.Run(() =>
             {
                 foreach (var e in snapshot)
                     try { e.Stop().GetAwaiter().GetResult(); } catch { }
             });
+            await Task.WhenAny(stopTask, Task.Delay(3000));
             KighmuLogger.Info(TAG, "MultiHttpProxyEngine arrete");
         }
 
