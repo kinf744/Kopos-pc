@@ -149,8 +149,35 @@ namespace KighmuVpnWindows.Engines
             if (!File.Exists(dnsttBin)) throw new Exception("dnstt-client.exe introuvable dans bin/win");
             StartDnsttProcess(dnsttBin);
 
-            await Task.Delay(1000);
-            if (_dnsttProcess?.HasExited == true) throw new Exception("dnstt mort au démarrage");
+            // Attendre que dnstt ecoute reellement (max 10s, check TCP toutes les 200ms)
+            bool ready  = false;
+            int  waited = 0;
+            while (waited < 10000)
+            {
+                await Task.Delay(200);
+                waited += 200;
+
+                if (_dnsttProcess?.HasExited == true)
+                    throw new Exception($"dnstt mort au demarrage (exit={_dnsttProcess.ExitCode})");
+
+                try
+                {
+                    var s = new TcpClient();
+                    var t = s.ConnectAsync(IPAddress.Loopback, DnsttPort);
+                    if (await Task.WhenAny(t, Task.Delay(100)) == t && s.Connected)
+                    {
+                        s.Close();
+                        ready = true;
+                        KighmuLogger.Info(TAG, $"dnstt (XrayDns) pret en {waited}ms port={DnsttPort}");
+                        break;
+                    }
+                }
+                catch { /* pas encore pret */ }
+            }
+
+            if (!ready)
+                throw new Exception($"dnstt n'a pas demarre dans les temps (port={DnsttPort})");
+
             return DnsttPort;
         }
 

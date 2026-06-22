@@ -43,7 +43,7 @@ namespace KighmuVpnWindows.Engines
                 if (_dnsttPort == 0)
                     _dnsttPort = _externalDnsttPort > 0
                         ? _externalDnsttPort
-                        : FindFreePort(7000 + (_instanceId * 10));
+                        : FindFreePort(0);
                 return _dnsttPort;
             }
         }
