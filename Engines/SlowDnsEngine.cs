@@ -294,8 +294,7 @@ namespace KighmuVpnWindows.Engines
                     while ((b = realStream.ReadByte()) != -1)
                     {
                         versionBytes.Add((byte)b);
-                        if (b == '
-') break;
+                        if (b == 10) break;
                     }
                     string banner = System.Text.Encoding.ASCII.GetString(versionBytes.ToArray()).Trim();
                     KighmuLogger.Info(TAG, $"SSH banner capturé: {banner}");
@@ -335,8 +334,7 @@ namespace KighmuVpnWindows.Engines
             client.Banner += (sender, e) =>
             {
                 var msg = e.BannerMessage ?? "";
-                foreach (var line in msg.Split(new[] { '', '
-' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var line in msg.Split(new[] { (char)13, (char)10 }, StringSplitOptions.RemoveEmptyEntries))
                     KighmuLogger.Info(TAG, $"[SSH BANNER] {line}");
             };
             client.Connect();
