@@ -415,7 +415,7 @@ namespace KighmuVpnWindows.Engines
 
         public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
-            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG);
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: false);
         }
 
         /// <summary>Arrêter seulement dnstt - force nouveau port au prochain démarrage</summary>
