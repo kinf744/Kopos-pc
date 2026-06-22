@@ -14,7 +14,7 @@ namespace KighmuVpnWindows.Engines
     /// <summary>
     /// Équivalent de SlowDnsEngine.kt.
     /// dnstt-client.exe (process) + SSH.NET (remplace trilead-ssh2) pour le port forwarding SOCKS5 dynamique.
-    /// Pas de banner proxy bridge : SSH.NET gère nativement le handshake SSH sur 127.0.0.1:dnsttPort.
+    /// Banner proxy bridge : lit SSH-2.0-xxx depuis dnstt puis relaie a SSH.NET (equivalent BannerProxy Android/trilead).
     /// </summary>
     public class SlowDnsEngine : ITunnelEngine
     {
@@ -263,8 +263,69 @@ namespace KighmuVpnWindows.Engines
 
         private void StartSsh()
         {
-            // SSH.NET se connecte directement sur le flux exposé par dnstt - pas de proxy intermédiaire requis
-            var connInfo = new ConnectionInfo("127.0.0.1", DnsttPort, _sshUser,
+            // ── Banner proxy (equivalent du BannerProxy Android/trilead) ─────────────
+            // dnstt expose le flux SSH brut mais SSH.NET ne lit pas le banner SSH-2.0 correctement.
+            // On cree un proxy local qui : lit le banner SSH-2.0-xxx, le relaie a SSH.NET, puis pipe bidirectionnel.
+            int bannerProxyPort = FindFreePort(19000 + (_profileIndex * 10));
+            var bannerReady = new System.Threading.ManualResetEventSlim(false);
+            Exception? bannerEx = null;
+
+            var bannerThread = new Thread(() =>
+            {
+                try
+                {
+                    var proxyServer = new System.Net.Sockets.TcpListener(IPAddress.Loopback, bannerProxyPort);
+                    proxyServer.Start(1);
+                    bannerReady.Set();
+                    var trileadSock = proxyServer.AcceptTcpClient();
+                    proxyServer.Stop();
+
+                    var realSock = new TcpClient();
+                    realSock.Connect(IPAddress.Loopback, DnsttPort);
+                    realSock.NoDelay = true;
+                    trileadSock.NoDelay = true;
+
+                    var realStream = realSock.GetStream();
+                    var trileadStream = trileadSock.GetStream();
+
+                    // Lire la ligne SSH-2.0-xxx depuis dnstt
+                    var versionBytes = new System.Collections.Generic.List<byte>();
+                    int b;
+                    while ((b = realStream.ReadByte()) != -1)
+                    {
+                        versionBytes.Add((byte)b);
+                        if (b == '
+') break;
+                    }
+                    string banner = System.Text.Encoding.ASCII.GetString(versionBytes.ToArray()).Trim();
+                    KighmuLogger.Info(TAG, $"SSH banner capturé: {banner}");
+
+                    // Envoyer le banner à SSH.NET
+                    trileadStream.Write(versionBytes.ToArray(), 0, versionBytes.Count);
+                    trileadStream.Flush();
+
+                    // Pipe bidirectionnel
+                    var t1 = new Thread(() => { try { realStream.CopyTo(trileadStream); } catch { } }) { IsBackground = true };
+                    var t2 = new Thread(() => { try { trileadStream.CopyTo(realStream); } catch { } }) { IsBackground = true };
+                    t1.Start(); t2.Start();
+                    t1.Join(); t2.Join();
+                }
+                catch (Exception ex)
+                {
+                    bannerEx = ex;
+                    bannerReady.Set();
+                    KighmuLogger.Error(TAG, $"BannerProxy erreur: {ex.Message}");
+                }
+            }) { IsBackground = true };
+            bannerThread.Start();
+
+            if (!bannerReady.Wait(3000))
+                throw new Exception("BannerProxy n'a pas demarre dans les temps");
+            if (bannerEx != null)
+                throw new Exception($"BannerProxy erreur: {bannerEx.Message}");
+
+            // SSH.NET se connecte au proxy banner local (pas directement a dnstt)
+            var connInfo = new ConnectionInfo("127.0.0.1", bannerProxyPort, _sshUser,
                 new PasswordAuthenticationMethod(_sshUser, _sshPass))
             {
                 Timeout = TimeSpan.FromSeconds(20)
