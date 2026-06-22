@@ -88,13 +88,28 @@ namespace KighmuVpnWindows.Engines
 
         private static int FindFreePort(int preferred)
         {
-            for (int p = preferred; p <= preferred + 20; p++)
+            for (int p = preferred; p <= preferred + 50; p++)
                 if (IsPortFree(p)) return p;
             var l = new TcpListener(IPAddress.Loopback, 0);
             l.Start();
             int port = ((IPEndPoint)l.LocalEndpoint).Port;
             l.Stop();
-            return port;
+            System.Threading.Thread.Sleep(100);
+            return IsPortFree(port) ? port : FindFreePortRandom();
+        }
+
+        private static int FindFreePortRandom()
+        {
+            for (int attempt = 0; attempt < 10; attempt++)
+            {
+                var l = new TcpListener(IPAddress.Loopback, 0);
+                l.Start();
+                int port = ((IPEndPoint)l.LocalEndpoint).Port;
+                l.Stop();
+                System.Threading.Thread.Sleep(50);
+                if (IsPortFree(port)) return port;
+            }
+            return new Random().Next(20000, 30000);
         }
 
         public async Task<int> Start()
