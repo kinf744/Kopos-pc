@@ -327,13 +327,13 @@ namespace KighmuVpnWindows.Engines
                 }
             });
 
-            await bannerLatch.WaitAsync(TimeSpan.FromSeconds(5));
+            await bannerLatch.WaitAsync(TimeSpan.FromSeconds(60));
 
             // ── SSH.NET se connecte au bridge local ──────────────────────────────
             var connInfo = new ConnectionInfo("127.0.0.1", bridgePort, _sshUser,
                 new PasswordAuthenticationMethod(_sshUser, _sshPass))
             {
-                Timeout = TimeSpan.FromSeconds(30)
+                Timeout = TimeSpan.FromSeconds(120)
             };
 
             var client = new SshClient(connInfo);
