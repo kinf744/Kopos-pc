@@ -303,5 +303,49 @@ namespace KighmuVpnWindows.Vpn
             p.WaitForExit();
             return output;
         }
+
+        /// <summary>Detecte tous les serveurs DNS configures sur le systeme via netsh.</summary>
+        private static List<string> DetectDnsServers()
+        {
+            var servers = new List<string>();
+            try
+            {
+                string output = RunCommandCapture("netsh", "interface ipv4 show dns");
+                foreach (var rawLine in output.Split('\n', '\r'))
+                {
+                    var line = rawLine.Trim();
+                    if (!line.Contains("DNS") || !line.Contains(".")) continue;
+                    var parts = line.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var part in parts)
+                    {
+                        if (part.Contains('.') && System.Net.IPAddress.TryParse(part, out _))
+                        {
+                            if (!servers.Contains(part))
+                                servers.Add(part);
+                        }
+                    }
+                }
+                KighmuLogger.Info(TAG, $"Serveurs DNS detectes: {string.Join(", ", servers)}");
+            }
+            catch (Exception ex)
+            {
+                KighmuLogger.Warning(TAG, $"DetectDnsServers: {ex.Message}");
+            }
+            return servers;
+        }
+
+        /// <summary>Calcule le sous-reseau local a partir d'une IP de passerelle (ex: 192.168.54.0).</summary>
+        private static string? GetLocalSubnet(string gatewayIp)
+        {
+            try
+            {
+                var ip = System.Net.IPAddress.Parse(gatewayIp);
+                if (ip.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork) return null;
+                byte[] bytes = ip.GetAddressBytes();
+                bytes[3] = 0; // /24: conserver les 3 premiers octets
+                return new System.Net.IPAddress(bytes).ToString();
+            }
+            catch { return null; }
+        }
     }
 }
