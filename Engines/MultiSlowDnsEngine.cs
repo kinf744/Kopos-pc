@@ -36,7 +36,7 @@ namespace KighmuVpnWindows.Engines
         }
 
         private const string TAG = "MultiSlowDnsEngine";
-        private const int SESSION_TIMEOUT_MS = 15000; // kex SSH via dnstt peut prendre 8-12s
+        private const int SESSION_TIMEOUT_MS = 60000; // kex SSH via dnstt peut prendre 8-12s
 
         private readonly SlowDnsConfig _baseConfig;
         private readonly string _baseSshUser;
@@ -247,7 +247,7 @@ namespace KighmuVpnWindows.Engines
 
                                 var newEngine = new SlowDnsEngine(BuildConfig(profile), profile.SshUser, profile.SshPass, capturedIdx);
                                 var startTask = newEngine.Start();
-                                var completed = await Task.WhenAny(startTask, Task.Delay(SESSION_TIMEOUT_MS * 5));
+                                var completed = await Task.WhenAny(startTask, Task.Delay(SESSION_TIMEOUT_MS));
                                 int port = completed == startTask ? await startTask : -1;
 
                                 if (port > 0)
