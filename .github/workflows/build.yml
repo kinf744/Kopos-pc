@@ -49,6 +49,15 @@ jobs:
             -o bin/win/hysteria.exe \
             "https://api.github.com/repos/kinf744/Kopos-pc/releases/assets/451681521"
 
+          # plink.exe (PuTTY) - SOCKS5 pour SlowDNS
+          curl -L -o plink_exe.zip             "https://the.earth.li/~sgtatham/putty/latest-w64/plink.exe"
+          mv plink.exe bin/win/plink.exe || true
+          # Verifier si plink.exe a ete telecharge
+          if [ ! -f bin/win/plink.exe ]; then
+            # Fallback: depuis les releases du repo
+            curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}"               -H "Accept: application/octet-stream"               -o bin/win/plink.exe               "https://api.github.com/repos/kinf744/Kopos-pc/releases/assets/451788798" || true
+          fi
+
           # hev-socks5-tunnel (tun2socks + wintun inclus)
           curl -L -o hev_win64.zip \
             "https://github.com/heiher/hev-socks5-tunnel/releases/download/2.15.0/hev-socks5-tunnel-win64.zip"
