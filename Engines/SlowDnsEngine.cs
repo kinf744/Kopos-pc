@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,6 +24,7 @@ namespace KighmuVpnWindows.Engines
         public string? ServerIp => _resolvedServerIp;
 
         private const string TAG = "SlowDnsEngine";
+        private const int PIPE_BUFFER_SIZE = 131072;
         public const int BASE_SOCKS_PORT = 10800;
 
         private readonly SlowDnsConfig _dns;
@@ -263,18 +265,76 @@ namespace KighmuVpnWindows.Engines
 
         private void StartSsh()
         {
-            // ── Connexion SSH.NET directement sur socket dnstt (sans BannerProxy) ──
-            // SSH.NET 2023.0.0 supporte SocketFactory : on injecte un TcpClient
-            // deja connecte au port dnstt. Pas de proxy intermediaire, pas de race condition.
-            KighmuLogger.Info(TAG, $"Connexion SSH directe sur dnstt port={DnsttPort}");
+            // ── BannerProxy bridge : lecture banner SSH + relay bidirectionnel ──
+            // Même pattern que HttpProxyEngine et SshSslEngine : on crée un proxy
+            // TCP local qui lit le banner SSH depuis dnstt, le relaye à SSH.NET,
+            // puis pipe bidirectionnellement. Ce buffer est indispensable pour
+            // compenser le half-duplex du tunnel DNS.
+            KighmuLogger.Info(TAG, $"Démarrage BannerProxy bridge dnstt port={DnsttPort}...");
 
+            var bridgeSS = new TcpListener(IPAddress.Loopback, 0);
+            bridgeSS.Start();
+            int bridgePort = ((IPEndPoint)bridgeSS.LocalEndpoint).Port;
 
-            var connInfo = new ConnectionInfo("127.0.0.1", DnsttPort, _sshUser,
+            var bannerLatch = new SemaphoreSlim(0, 1);
+
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    var bridgeClient = bridgeSS.AcceptTcpClient();
+                    bridgeSS.Stop();
+                    bridgeClient.ReceiveBufferSize = PIPE_BUFFER_SIZE;
+                    bridgeClient.SendBufferSize = PIPE_BUFFER_SIZE;
+                    bridgeClient.Client.NoDelay = true;
+
+                    var dnsttClient = new TcpClient();
+                    dnsttClient.Connect(IPAddress.Loopback, DnsttPort);
+                    dnsttClient.ReceiveBufferSize = PIPE_BUFFER_SIZE;
+                    dnsttClient.SendBufferSize = PIPE_BUFFER_SIZE;
+                    dnsttClient.Client.NoDelay = true;
+
+                    var realIn = dnsttClient.GetStream();
+                    var bridgeStream = bridgeClient.GetStream();
+
+                    // Lire la bannière SSH (SSH-2.0-xxx) depuis dnstt
+                    var versionBytes = new StringBuilder();
+                    int b;
+                    while ((b = realIn.ReadByte()) != -1)
+                    {
+                        versionBytes.Append((char)b);
+                        if (versionBytes.ToString().EndsWith("\n")) break;
+                    }
+                    string banner = versionBytes.ToString().Trim();
+                    if (!string.IsNullOrEmpty(banner))
+                        KighmuLogger.Info(TAG, banner);
+
+                    byte[] bannerBytes = Encoding.UTF8.GetBytes(versionBytes.ToString());
+                    bridgeStream.Write(bannerBytes, 0, bannerBytes.Length);
+                    bridgeStream.Flush();
+                    bannerLatch.Release();
+
+                    // Pipe bidirectionnel bufferisé
+                    var t1 = new Thread(() => { try { Pipe(realIn, bridgeStream); } catch { } }) { IsBackground = true };
+                    var t2 = new Thread(() => { try { Pipe(bridgeStream, realIn); } catch { } }) { IsBackground = true };
+                    t1.Start(); t2.Start();
+                }
+                catch (Exception ex)
+                {
+                    KighmuLogger.Error(TAG, $"BannerProxy bridge error: {ex.Message}");
+                    try { bridgeSS.Stop(); } catch { }
+                    bannerLatch.Release();
+                }
+            });
+
+            await bannerLatch.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // ── SSH.NET se connecte au bridge local ──────────────────────────────
+            var connInfo = new ConnectionInfo("127.0.0.1", bridgePort, _sshUser,
                 new PasswordAuthenticationMethod(_sshUser, _sshPass))
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-
 
             var client = new SshClient(connInfo);
             client.KeepAliveInterval = TimeSpan.FromSeconds(15);
@@ -310,7 +370,6 @@ namespace KighmuVpnWindows.Engines
                             _sshAlive = false;
                             break;
                         }
-                        // SendKeepAlive obsolete - keep-alive gere par KeepAliveInterval
                     }
                     catch (Exception ex)
                     {
@@ -362,7 +421,23 @@ namespace KighmuVpnWindows.Engines
 
         public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
-            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: false);
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: true);
+        }
+
+        private static void Pipe(Stream input, Stream output)
+        {
+            var buf = new byte[PIPE_BUFFER_SIZE];
+            try
+            {
+                while (true)
+                {
+                    int n = input.Read(buf, 0, buf.Length);
+                    if (n == 0) break;
+                    output.Write(buf, 0, n);
+                    output.Flush();
+                }
+            }
+            catch { }
         }
 
         /// <summary>Arrêter seulement dnstt - force nouveau port au prochain démarrage</summary>
