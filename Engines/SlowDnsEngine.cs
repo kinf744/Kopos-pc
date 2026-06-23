@@ -268,21 +268,12 @@ namespace KighmuVpnWindows.Engines
             // deja connecte au port dnstt. Pas de proxy intermediaire, pas de race condition.
             KighmuLogger.Info(TAG, $"Connexion SSH directe sur dnstt port={DnsttPort}");
 
-            var directSocket = new TcpClient();
-            directSocket.NoDelay = true;
-            directSocket.Connect(IPAddress.Loopback, DnsttPort);
-            if (!directSocket.Connected)
-                throw new Exception($"Impossible de connecter le socket SSH a dnstt (port={DnsttPort})");
-            KighmuLogger.Info(TAG, $"Socket SSH connecte a dnstt port={DnsttPort}");
 
             var connInfo = new ConnectionInfo("127.0.0.1", DnsttPort, _sshUser,
                 new PasswordAuthenticationMethod(_sshUser, _sshPass))
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-            connInfo.Encoding = System.Text.Encoding.UTF8;
-            // Injecter le socket pre-connecte via SocketFactory
-            connInfo.SocketFactory = new DirectSocketFactory(directSocket);
 
 
             var client = new SshClient(connInfo);
@@ -418,28 +409,6 @@ namespace KighmuVpnWindows.Engines
         }
 
         public bool IsRunning() => _running && _sshAlive;
-    }
-    /// <summary>
-    /// SocketFactory SSH.NET 2023+ : injecte un TcpClient deja connecte.
-    /// Permet a SSH.NET de reutiliser un socket ouvert vers dnstt sans proxy intermediaire.
-    /// </summary>
-    internal class DirectSocketFactory : Renci.SshNet.Abstractions.ISocketFactory
-    {
-        private readonly TcpClient _client;
-        private bool _used = false;
-
-        public DirectSocketFactory(TcpClient client) { _client = client; }
-
-        public Socket Create(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
-        {
-            if (!_used)
-            {
-                _used = true;
-                return _client.Client;
-            }
-            // Fallback pour keep-alive interne SSH.NET
-            return new Socket(addressFamily, socketType, protocolType);
-        }
     }
 
 }
