@@ -118,8 +118,8 @@ namespace KighmuVpnWindows.Engines
                         if (attempt > 1)
                         {
                             KighmuLogger.Warning(TAG, $"Session[{globalIdx + 1}] retry {attempt}/{MAX_RETRIES} dans {RETRY_DELAY_MS}ms...");
-                            // Tuer seulement SSH, garder dnstt vivant pour retry rapide
-                            try { activeEngine.StopSshOnly(); } catch { /* ignore */ }
+                            // Tuer seulement plink, garder dnstt vivant pour retry rapide
+                            try { activeEngine.StopPlinkOnly(); } catch { /* ignore */ }
                             await Task.Delay(RETRY_DELAY_MS);
                         }
 
