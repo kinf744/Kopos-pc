@@ -231,6 +231,13 @@ namespace KighmuVpnWindows.Vpn
                 }
                 _excludedServerIps.Clear();
 
+                // Nettoyer les exclusions DNS (SlowDNS)
+                string[] dnsExcludes = { "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1" };
+                foreach (var dnsIp in dnsExcludes)
+                {
+                    RunCommand("route", $"delete {dnsIp} mask 255.255.255.255");
+                }
+
                 KighmuLogger.Info(TAG, "Routes systeme supprimees.");
             }
             catch (Exception ex)
