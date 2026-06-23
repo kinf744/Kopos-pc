@@ -25,6 +25,7 @@ namespace KighmuVpnWindows.Vpn
         /// Attend que l'adaptateur soit pret (jusqu'a 5s) avant de configurer.
         /// </summary>
         private static List<string> _excludedServerIps = new List<string>();
+        private static string? _cachedDefaultGateway;
 
         /// <summary>
         /// Ajoute les routes d'exclusion pour les IPs serveur AVANT de demarrer tun2socks.
@@ -34,12 +35,14 @@ namespace KighmuVpnWindows.Vpn
         {
             try
             {
-                string? originalGateway = GetDefaultGateway();
-                if (string.IsNullOrWhiteSpace(originalGateway))
+                // Sauvegarder la passerelle AVANT toute modification des routes
+                _cachedDefaultGateway = GetDefaultGateway();
+                if (string.IsNullOrWhiteSpace(_cachedDefaultGateway))
                 {
                     KighmuLogger.Warn(TAG, "Passerelle introuvable pour AddServerExclusions");
                     return;
                 }
+                string? originalGateway = _cachedDefaultGateway;
                 var ips = serverIp.Split(',')
                     .Select(s => s.Trim())
                     .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -82,14 +85,15 @@ namespace KighmuVpnWindows.Vpn
                 RunCommand("route", $"add 0.0.0.0 mask 128.0.0.0 {tunnelLocalIp} metric 1 if {idx}");
                 RunCommand("route", $"add 128.0.0.0 mask 128.0.0.0 {tunnelLocalIp} metric 1 if {idx}");
                 // SlowDNS: exclure les DNS du tunnel (SSH ne supporte pas UDP)
-            string defaultGw = GetDefaultGateway();
-            if (!string.IsNullOrWhiteSpace(defaultGw))
+            // Utiliser la passerelle en cache (capturee avant toute modification des routes)
+            string dnsGw = _cachedDefaultGateway ?? GetDefaultGateway();
+            if (!string.IsNullOrWhiteSpace(dnsGw))
             {
                 string[] dnsExcludes = { "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1" };
                 foreach (var dnsIp in dnsExcludes)
                 {
-                    RunCommand("route", $"add {dnsIp} mask 255.255.255.255 {defaultGw} metric 1");
-                    KighmuLogger.Info(TAG, $"DNS exclusion: {dnsIp}/32 via {defaultGw}");
+                    RunCommand("route", $"add {dnsIp} mask 255.255.255.255 {dnsGw} metric 1");
+                    KighmuLogger.Info(TAG, $"DNS exclusion: {dnsIp}/32 via {dnsGw}");
                 }
             }
             RunCommand("netsh", $"interface ip set dns name=\"{adapterName}\" static {dnsServer}");
@@ -230,6 +234,7 @@ namespace KighmuVpnWindows.Vpn
                     KighmuLogger.Info(TAG, $"Route exclusion supprimee: {ip}/32");
                 }
                 _excludedServerIps.Clear();
+                _cachedDefaultGateway = null;
 
                 // Nettoyer les exclusions DNS (SlowDNS)
                 string[] dnsExcludes = { "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1" };
