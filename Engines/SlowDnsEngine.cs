@@ -302,7 +302,7 @@ namespace KighmuVpnWindows.Engines
                 if (proc.WaitForExit(8000))
                 {
                     string output = cachedOutput.ToString();
-                    if (output.Contains("host key", StringComparison.OrdinalIgnoreCase))
+                    if (output.IndexOf("host key", StringComparison.OrdinalIgnoreCase) >= 0)
                         KighmuLogger.Info(TAG, "CacheSshHostKey: cle hote acceptee/cachee");
                     else if (proc.ExitCode == 0)
                         KighmuLogger.Info(TAG, "CacheSshHostKey: deja en cache (connexion rapide OK)");
