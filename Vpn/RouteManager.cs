@@ -81,7 +81,18 @@ namespace KighmuVpnWindows.Vpn
 
                 RunCommand("route", $"add 0.0.0.0 mask 128.0.0.0 {tunnelLocalIp} metric 1 if {idx}");
                 RunCommand("route", $"add 128.0.0.0 mask 128.0.0.0 {tunnelLocalIp} metric 1 if {idx}");
-                RunCommand("netsh", $"interface ip set dns name=\"{adapterName}\" static {dnsServer}");
+                // SlowDNS: exclure les DNS du tunnel (SSH ne supporte pas UDP)
+            string defaultGw = GetDefaultGateway();
+            if (!string.IsNullOrWhiteSpace(defaultGw))
+            {
+                string[] dnsExcludes = { "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1" };
+                foreach (var dnsIp in dnsExcludes)
+                {
+                    RunCommand("route", $"add {dnsIp} mask 255.255.255.255 {defaultGw} metric 1");
+                    KighmuLogger.Info(TAG, $"DNS exclusion: {dnsIp}/32 via {defaultGw}");
+                }
+            }
+            RunCommand("netsh", $"interface ip set dns name=\"{adapterName}\" static {dnsServer}");
 
                 KighmuLogger.Info(TAG, "Routes systeme appliquees (tout le trafic -> tunnel, sauf IP serveur).");
                 return true;
