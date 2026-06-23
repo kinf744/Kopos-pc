@@ -50,7 +50,7 @@ jobs:
             "https://api.github.com/repos/kinf744/Kopos-pc/releases/assets/451681521"
 
           # plink.exe (PuTTY) - SOCKS5 pour SlowDNS
-          curl -L -o bin/win/plink.exe             "https://the.earth.li/~sgtatham/putty/latest-w64/plink.exe"
+          curl -L -o bin/win/plink.exe             "https://the.earth.li/~sgtatham/putty/0.82/w64/plink.exe"
           if [ -f bin/win/plink.exe ] && [ -s bin/win/plink.exe ]; then
             echo "plink.exe OK: $(stat -c%s bin/win/plink.exe 2>/dev/null || ls -lh bin/win/plink.exe | awk '{print $5}') bytes"
           else
