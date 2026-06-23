@@ -144,7 +144,7 @@ namespace KighmuVpnWindows.Engines
             }
 
             // Phase 2 : plink (remplace SSH.NET)
-            StartPlink();
+            await StartPlink();
 
             return SocksPort;
         }
@@ -255,7 +255,7 @@ namespace KighmuVpnWindows.Engines
                 throw new Exception($"dnstt crashed (exit={_dnsttProcess.ExitCode})");
         }
 
-        private void StartPlink()
+        private async Task StartPlink()
         {
             string plinkBin = GetBinaryPath("plink.exe");
             if (!File.Exists(plinkBin))
