@@ -323,6 +323,19 @@ namespace KighmuVpnWindows.Engines
 
         private async Task StartPlink()
         {
+            // Configurer keepalive SSH dans le registre PuTTY (pas d'option CLI)
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(
+                    @"Software\SimonTatham\PuTTY\Sessions\Default%20Settings");
+                if (key != null)
+                {
+                    key.SetValue("PingInterval", 30, Microsoft.Win32.RegistryValueKind.DWord);
+                    key.SetValue("PingIntervalSecs", 30, Microsoft.Win32.RegistryValueKind.DWord);
+                }
+            }
+            catch { /* keepalive non essentiel */ }
+
             string plinkBin = GetBinaryPath("plink.exe");
             if (!File.Exists(plinkBin))
                 throw new Exception("plink.exe introuvable dans bin/win");
@@ -350,9 +363,9 @@ namespace KighmuVpnWindows.Engines
             if (!dnsttReady)
                 KighmuLogger.Warning(TAG, $"dnstt port={DnsttPort} pas joignable, plink va probablement echouer");
 
-            string args = $"-D {port} -P {DnsttPort} -l {_sshUser} -pw \"{_sshPass}\" -v -no-antispoof -batch -N 127.0.0.1";
+            string args = $"-D {port} -P {DnsttPort} -l {_sshUser} -pw \"{_sshPass}\" -2 -C -v -no-antispoof -batch -N 127.0.0.1";
 
-            KighmuLogger.Info(TAG, $"Lancement plink: {plinkBin} -D {port} -P {DnsttPort} -l {_sshUser} -pw *** -v -no-antispoof -batch -N 127.0.0.1");
+            KighmuLogger.Info(TAG, $"Lancement plink: {plinkBin} -D {port} -P {DnsttPort} -l {_sshUser} -pw *** -2 -C -v -no-antispoof -batch -N 127.0.0.1");
 
             var psi = new ProcessStartInfo
             {
