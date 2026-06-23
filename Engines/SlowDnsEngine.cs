@@ -143,6 +143,9 @@ namespace KighmuVpnWindows.Engines
                 }
             }
 
+            // Pre-cache SSH host key (plink exit 1 si clé inconnue)
+            await CacheSshHostKey();
+
             // Phase 2 : plink (remplace SSH.NET)
             await StartPlink();
 
@@ -253,6 +256,69 @@ namespace KighmuVpnWindows.Engines
             Thread.Sleep(500);
             if (_dnsttProcess.HasExited)
                 throw new Exception($"dnstt crashed (exit={_dnsttProcess.ExitCode})");
+        }
+
+        private async Task CacheSshHostKey()
+        {
+            // plink 0.82+ envoie les invites sur CON, pas sur stdin/stdout/stderr.
+            // On utilise -legacy-stdio-prompts pour forcer le passage par stdin,
+            // et on pipe "y" pour accepter/cacher la clé SSH hôte.
+            try
+            {
+                string plinkBin = GetBinaryPath("plink.exe");
+                if (!File.Exists(plinkBin) || DnsttPort <= 0)
+                {
+                    KighmuLogger.Info(TAG, "CacheSshHostKey: plink introuvable ou port invalide, skip");
+                    return;
+                }
+
+                string args = $"-legacy-stdio-prompts -l {_sshUser} -pw \"{_sshPass}\" -P {DnsttPort} -no-antispoof -N 127.0.0.1";
+                KighmuLogger.Info(TAG, "CacheSshHostKey: verification/cache de la cle SSH hote...");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = plinkBin,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                using var proc = new Process { StartInfo = psi };
+                var cachedOutput = new System.Text.StringBuilder();
+                proc.OutputDataReceived += (s, e) => { if (e.Data != null) cachedOutput.AppendLine(e.Data); };
+                proc.ErrorDataReceived += (s, e) => { if (e.Data != null) cachedOutput.AppendLine(e.Data); };
+
+                proc.Start();
+                proc.BeginOutputReadLine();
+                proc.BeginErrorReadLine();
+
+                // Envoyer "y" pour accepter la clé si elle n'est pas encore en cache
+                proc.StandardInput.WriteLine("y");
+                proc.StandardInput.Flush();
+
+                if (proc.WaitForExit(8000))
+                {
+                    string output = cachedOutput.ToString();
+                    if (output.Contains("host key", StringComparison.OrdinalIgnoreCase))
+                        KighmuLogger.Info(TAG, "CacheSshHostKey: cle hote acceptee/cachee");
+                    else if (proc.ExitCode == 0)
+                        KighmuLogger.Info(TAG, "CacheSshHostKey: deja en cache (connexion rapide OK)");
+                    else
+                        KighmuLogger.Warning(TAG, $"CacheSshHostKey: plink exit={proc.ExitCode} (attendue si deja en cache)");
+                }
+                else
+                {
+                    try { proc.Kill(); } catch { }
+                    KighmuLogger.Info(TAG, "CacheSshHostKey: timeout (cle probablement deja en cache, plink attend)");
+                }
+            }
+            catch (Exception ex)
+            {
+                KighmuLogger.Warning(TAG, $"CacheSshHostKey: {ex.Message}");
+            }
         }
 
         private async Task StartPlink()
