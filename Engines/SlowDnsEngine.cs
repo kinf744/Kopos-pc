@@ -1,12 +1,10 @@
 using KighmuVpnWindows.Models;
 using KighmuVpnWindows.Utils;
-using Renci.SshNet;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,17 +12,15 @@ namespace KighmuVpnWindows.Engines
 {
     /// <summary>
     /// Équivalent de SlowDnsEngine.kt.
-    /// dnstt-client.exe (process) + SSH.NET (remplace trilead-ssh2) pour le port forwarding SOCKS5 dynamique.
-    /// Banner proxy bridge : lit SSH-2.0-xxx depuis dnstt puis relaie a SSH.NET (equivalent BannerProxy Android/trilead).
+    /// dnstt-client.exe (tunnel DNS) + plink.exe (SSH PuTTY) pour SOCKS5 dynamique.
+    /// plink est l'outil standard pour SlowDNS sur Windows, bien plus fiable que SSH.NET.
     /// </summary>
     public class SlowDnsEngine : ITunnelEngine
     {
         private string? _resolvedServerIp;
-        /// <summary>IP serveur (resolver DNS) a exclure des routes systeme.</summary>
         public string? ServerIp => _resolvedServerIp;
 
         private const string TAG = "SlowDnsEngine";
-        private const int PIPE_BUFFER_SIZE = 131072;
         public const int BASE_SOCKS_PORT = 10800;
 
         private readonly SlowDnsConfig _dns;
@@ -57,8 +53,7 @@ namespace KighmuVpnWindows.Engines
         private volatile bool _sshAlive;
         public volatile bool IsDegraded;
 
-        private SshClient? _sshClient;
-        private ForwardedPortDynamic? _forwardedPort;
+        private Process? _plinkProcess;
         private Process? _dnsttProcess;
         private Process? _tun2socksProcess;
         private CancellationTokenSource? _cts;
@@ -122,14 +117,13 @@ namespace KighmuVpnWindows.Engines
             if (string.IsNullOrWhiteSpace(_dns.Nameserver)) throw new Exception("Nameserver manquant");
             if (string.IsNullOrWhiteSpace(CleanPublicKey)) throw new Exception("Public Key manquante");
 
-            // Phase 1 : démarrer dnstt seulement si pas déjà vivant
+            // Phase 1 : démarrer dnstt
             if (_dnsttProcess == null || _dnsttProcess.HasExited)
             {
                 string dnsttBin = GetBinaryPath("dnstt-client.exe");
                 if (!File.Exists(dnsttBin)) throw new Exception("dnstt-client.exe introuvable dans bin/win");
                 StartDnsttProcess(dnsttBin);
 
-                // Attendre que dnstt soit prêt (max 8s, check toutes les 200ms)
                 int waited = 0;
                 while (waited < 12000)
                 {
@@ -145,17 +139,16 @@ namespace KighmuVpnWindows.Engines
                             break;
                         }
                     }
-                    catch { /* pas encore prêt */ }
+                    catch { }
                 }
             }
 
-            // Phase 2 : SSH uniquement (rapide, retry possible sans relancer dnstt)
-            StartSsh();
+            // Phase 2 : plink (remplace SSH.NET)
+            StartPlink();
 
             return SocksPort;
         }
 
-        /// <summary>Démarrer seulement dnstt sans SSH - pour usage par un engine composite (Xray+SlowDNS)</summary>
         public async Task<int> StartDnsttOnly()
         {
             _running = true;
@@ -166,9 +159,8 @@ namespace KighmuVpnWindows.Engines
             if (!File.Exists(dnsttBin)) throw new Exception("dnstt-client.exe introuvable dans bin/win");
             StartDnsttProcess(dnsttBin);
 
-            // Attendre que dnstt ecoute reellement (max 10s, check TCP toutes les 200ms)
-            bool ready  = false;
-            int  waited = 0;
+            bool ready = false;
+            int waited = 0;
             while (waited < 10000)
             {
                 await Task.Delay(200);
@@ -189,7 +181,7 @@ namespace KighmuVpnWindows.Engines
                         break;
                     }
                 }
-                catch { /* pas encore pret */ }
+                catch { }
             }
 
             if (!ready)
@@ -263,124 +255,106 @@ namespace KighmuVpnWindows.Engines
                 throw new Exception($"dnstt crashed (exit={_dnsttProcess.ExitCode})");
         }
 
-        private void StartSsh()
+        private void StartPlink()
         {
-            // ── BannerProxy bridge : lecture banner SSH + relay bidirectionnel ──
-            // Même pattern que HttpProxyEngine et SshSslEngine : on crée un proxy
-            // TCP local qui lit le banner SSH depuis dnstt, le relaye à SSH.NET,
-            // puis pipe bidirectionnellement. Ce buffer est indispensable pour
-            // compenser le half-duplex du tunnel DNS.
-            KighmuLogger.Info(TAG, $"Démarrage BannerProxy bridge dnstt port={DnsttPort}...");
+            string plinkBin = GetBinaryPath("plink.exe");
+            if (!File.Exists(plinkBin))
+                throw new Exception("plink.exe introuvable dans bin/win");
 
-            var bridgeSS = new TcpListener(IPAddress.Loopback, 0);
-            bridgeSS.Start();
-            int bridgePort = ((IPEndPoint)bridgeSS.LocalEndpoint).Port;
+            int port = SocksPort;
+            string args = $"-D {port} -P {DnsttPort} -l {_sshUser} -pw \"{_sshPass}\" -no-antispoof -batch -N 127.0.0.1";
 
-            var bannerLatch = new SemaphoreSlim(0, 1);
+            KighmuLogger.Info(TAG, $"Lancement plink: {plinkBin} -D {port} -P {DnsttPort} -l {_sshUser} -pw *** -no-antispoof -batch -N 127.0.0.1");
 
-            _ = Task.Run(() =>
+            var psi = new ProcessStartInfo
             {
-                try
-                {
-                    var bridgeClient = bridgeSS.AcceptTcpClient();
-                    bridgeSS.Stop();
-                    bridgeClient.ReceiveBufferSize = PIPE_BUFFER_SIZE;
-                    bridgeClient.SendBufferSize = PIPE_BUFFER_SIZE;
-                    bridgeClient.Client.NoDelay = true;
-
-                    var dnsttClient = new TcpClient();
-                    dnsttClient.Connect(IPAddress.Loopback, DnsttPort);
-                    dnsttClient.ReceiveBufferSize = PIPE_BUFFER_SIZE;
-                    dnsttClient.SendBufferSize = PIPE_BUFFER_SIZE;
-                    dnsttClient.Client.NoDelay = true;
-
-                    var realIn = dnsttClient.GetStream();
-                    var bridgeStream = bridgeClient.GetStream();
-
-                    // Lire la bannière SSH (SSH-2.0-xxx) depuis dnstt
-                    var versionBytes = new StringBuilder();
-                    int b;
-                    while ((b = realIn.ReadByte()) != -1)
-                    {
-                        versionBytes.Append((char)b);
-                        if (versionBytes.ToString().EndsWith("\n")) break;
-                    }
-                    string banner = versionBytes.ToString().Trim();
-                    if (!string.IsNullOrEmpty(banner))
-                        KighmuLogger.Info(TAG, banner);
-
-                    byte[] bannerBytes = Encoding.UTF8.GetBytes(versionBytes.ToString());
-                    bridgeStream.Write(bannerBytes, 0, bannerBytes.Length);
-                    bridgeStream.Flush();
-                    bannerLatch.Release();
-
-                    // Pipe bidirectionnel bufferisé
-                    var t1 = new Thread(() => { try { Pipe(realIn, bridgeStream); } catch { } }) { IsBackground = true };
-                    var t2 = new Thread(() => { try { Pipe(bridgeStream, realIn); } catch { } }) { IsBackground = true };
-                    t1.Start(); t2.Start();
-                }
-                catch (Exception ex)
-                {
-                    KighmuLogger.Error(TAG, $"BannerProxy bridge error: {ex.Message}");
-                    try { bridgeSS.Stop(); } catch { }
-                    bannerLatch.Release();
-                }
-            });
-
-            await bannerLatch.WaitAsync(TimeSpan.FromSeconds(60));
-
-            // ── SSH.NET se connecte au bridge local ──────────────────────────────
-            var connInfo = new ConnectionInfo("127.0.0.1", bridgePort, _sshUser,
-                new PasswordAuthenticationMethod(_sshUser, _sshPass))
-            {
-                Timeout = TimeSpan.FromSeconds(120)
+                FileName = plinkBin,
+                Arguments = args,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
             };
 
-            var client = new SshClient(connInfo);
-            client.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            _plinkProcess = new Process { StartInfo = psi };
+            _plinkProcess.OutputDataReceived += (s, e) =>
+            {
+                if (e.Data == null || !_running) return;
+                if (!e.Data.Contains("lastlogon") && !e.Data.Contains("password"))
+                    KighmuLogger.Info(TAG, $"plink: {e.Data}");
+            };
+            _plinkProcess.ErrorDataReceived += (s, e) =>
+            {
+                if (e.Data == null || !_running) return;
+                if (e.Data.Contains("FATAL") || e.Data.Contains("ERROR") || e.Data.Contains("fatal"))
+                {
+                    KighmuLogger.Error(TAG, $"plink error: {e.Data}");
+                    IsDegraded = true;
+                }
+                else if (!e.Data.Contains("lastlogon") && !e.Data.Contains("password"))
+                {
+                    KighmuLogger.Info(TAG, $"plink: {e.Data}");
+                }
+            };
+            _plinkProcess.Exited += (s, e) =>
+            {
+                KighmuLogger.Error(TAG, $"plink exited code={_plinkProcess?.ExitCode}");
+                _sshAlive = false;
+            };
 
-            client.Connect();
+            _plinkProcess.Start();
+            _plinkProcess.BeginOutputReadLine();
+            _plinkProcess.BeginErrorReadLine();
 
-            if (!client.IsConnected) throw new Exception($"SSH auth echoue pour {_sshUser}");
+            // Attendre que plink ouvre le port SOCKS5 (max 120s)
+            KighmuLogger.Info(TAG, "Attente port SOCKS5 plink...");
+            bool socksReady = false;
+            for (int i = 0; i < 240; i++)
+            {
+                if (_plinkProcess.HasExited)
+                    throw new Exception($"plink mort au demarrage (exit={_plinkProcess.ExitCode})");
 
-            // SOCKS5 proxy local port libre garanti
-            int port = SocksPort;
-            var forwarder = new ForwardedPortDynamic("127.0.0.1", (uint)port);
-            client.AddForwardedPort(forwarder);
-            forwarder.Start();
+                await Task.Delay(500);
 
-            _sshClient = client;
-            _forwardedPort = forwarder;
+                try
+                {
+                    var s = new TcpClient();
+                    var t = s.ConnectAsync(IPAddress.Loopback, port);
+                    if (await Task.WhenAny(t, Task.Delay(200)) == t && s.Connected)
+                    {
+                        s.Close();
+                        socksReady = true;
+                        KighmuLogger.Info(TAG, $"plink SOCKS5 pret port={port} en {i * 500}ms");
+                        break;
+                    }
+                }
+                catch { }
+            }
+
+            if (!socksReady)
+                throw new Exception($"plink n'a pas ouvert le port SOCKS5 dans les 120s");
+
             _sshAlive = true;
 
             var token = _cts!.Token;
 
-            // ── Keep-alive toutes les 8s avec détection de mort ─────────────────
+            // Surveillance plink
             _ = Task.Run(async () =>
             {
                 while (_running && !token.IsCancellationRequested)
                 {
                     await Task.Delay(8000, token).ContinueWith(_ => { });
                     if (!_running) break;
-                    try
+                    if (_plinkProcess == null || _plinkProcess.HasExited)
                     {
-                        if (!client.IsConnected)
-                        {
-                            KighmuLogger.Error(TAG, "Keep-alive: tunnel mort, marquage sshAlive=false");
-                            _sshAlive = false;
-                            break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        KighmuLogger.Error(TAG, $"Keep-alive erreur → tunnel mort: {ex.Message}");
+                        KighmuLogger.Error(TAG, "plink: processus mort");
                         _sshAlive = false;
                         break;
                     }
                 }
             }, token);
 
-            // ── Health check dnstt indépendant du SSH ────────────────────────────
+            // Health check dnstt
             _ = Task.Run(async () =>
             {
                 int dnsttFailCount = 0;
@@ -393,18 +367,18 @@ namespace KighmuVpnWindows.Engines
                     try
                     {
                         var s = new TcpClient();
-                        var connectTask = s.ConnectAsync(IPAddress.Loopback, DnsttPort);
-                        alive = await Task.WhenAny(connectTask, Task.Delay(1000)) == connectTask && s.Connected;
+                        var ct = s.ConnectAsync(IPAddress.Loopback, DnsttPort);
+                        alive = await Task.WhenAny(ct, Task.Delay(1000)) == ct && s.Connected;
                     }
                     catch { alive = false; }
 
                     if (!alive)
                     {
                         dnsttFailCount++;
-                        KighmuLogger.Error(TAG, $"dnstt health check échoué ({dnsttFailCount}/2)");
+                        KighmuLogger.Error(TAG, $"dnstt health check echoue ({dnsttFailCount}/2)");
                         if (dnsttFailCount >= 2)
                         {
-                            KighmuLogger.Error(TAG, "dnstt mort détecté → IsDegraded=true");
+                            KighmuLogger.Error(TAG, "dnstt mort → IsDegraded=true");
                             IsDegraded = true;
                             break;
                         }
@@ -424,37 +398,18 @@ namespace KighmuVpnWindows.Engines
             _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: true);
         }
 
-        private static void Pipe(Stream input, Stream output)
-        {
-            var buf = new byte[PIPE_BUFFER_SIZE];
-            try
-            {
-                while (true)
-                {
-                    int n = input.Read(buf, 0, buf.Length);
-                    if (n == 0) break;
-                    output.Write(buf, 0, n);
-                    output.Flush();
-                }
-            }
-            catch { }
-        }
-
-        /// <summary>Arrêter seulement dnstt - force nouveau port au prochain démarrage</summary>
         public void StopDnsttOnly()
         {
-            try { _dnsttProcess?.Kill(); } catch { /* ignore */ }
+            try { _dnsttProcess?.Kill(); } catch { }
             _dnsttProcess = null;
             _dnsttPort = 0;
         }
 
-        /// <summary>Arrêter seulement SSH - garder dnstt vivant pour retry rapide</summary>
-        public void StopSshOnly()
+        public void StopPlinkOnly()
         {
             _sshAlive = false;
-            try { _forwardedPort?.Stop(); } catch { /* ignore */ }
-            try { _sshClient?.Disconnect(); _sshClient?.Dispose(); } catch { /* ignore */ }
-            _sshClient = null;
+            try { _plinkProcess?.Kill(); } catch { }
+            _plinkProcess = null;
             _socksPort = 0;
         }
 
@@ -462,20 +417,18 @@ namespace KighmuVpnWindows.Engines
         {
             _running = false;
             _sshAlive = false;
-            try { _cts?.Cancel(); } catch { /* ignore */ }
+            try { _cts?.Cancel(); } catch { }
 
-            // Arret nucleaire : timeout 3s max
             var stopTask = Task.Run(() =>
             {
-                try { _tun2socksProcess?.Kill(); } catch { /* ignore */ }
-                try { _dnsttProcess?.Kill(); }    catch { /* ignore */ }
-                try { _forwardedPort?.Stop(); }   catch { /* ignore */ }
-                try { _sshClient?.Disconnect(); _sshClient?.Dispose(); } catch { /* ignore */ }
+                try { _tun2socksProcess?.Kill(); } catch { }
+                try { _plinkProcess?.Kill(); }     catch { }
+                try { _dnsttProcess?.Kill(); }     catch { }
             });
             await Task.WhenAny(stopTask, Task.Delay(3000));
 
             _tun2socksProcess = null;
-            _sshClient        = null;
+            _plinkProcess     = null;
             _dnsttProcess     = null;
             _dnsttPort        = 0;
             _socksPort        = 0;
@@ -485,5 +438,4 @@ namespace KighmuVpnWindows.Engines
 
         public bool IsRunning() => _running && _sshAlive;
     }
-
 }
