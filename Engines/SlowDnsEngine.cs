@@ -262,9 +262,31 @@ namespace KighmuVpnWindows.Engines
                 throw new Exception("plink.exe introuvable dans bin/win");
 
             int port = SocksPort;
-            string args = $"-D {port} -P {DnsttPort} -l {_sshUser} -pw \"{_sshPass}\" -no-antispoof -batch -N 127.0.0.1";
 
-            KighmuLogger.Info(TAG, $"Lancement plink: {plinkBin} -D {port} -P {DnsttPort} -l {_sshUser} -pw *** -no-antispoof -batch -N 127.0.0.1");
+            // Verifier que le port dnstt est bien joignable avant de lancer plink
+            bool dnsttReady = false;
+            for (int i = 0; i < 20; i++)
+            {
+                try
+                {
+                    var s = new TcpClient();
+                    var t = s.ConnectAsync(IPAddress.Loopback, DnsttPort);
+                    if (await Task.WhenAny(t, Task.Delay(500)) == t && s.Connected)
+                    {
+                        s.Close();
+                        dnsttReady = true;
+                        break;
+                    }
+                }
+                catch { }
+                await Task.Delay(200);
+            }
+            if (!dnsttReady)
+                KighmuLogger.Warning(TAG, $"dnstt port={DnsttPort} pas joignable, plink va probablement echouer");
+
+            string args = $"-D {port} -P {DnsttPort} -l {_sshUser} -pw \"{_sshPass}\" -v -no-antispoof -batch -N 127.0.0.1";
+
+            KighmuLogger.Info(TAG, $"Lancement plink: {plinkBin} -D {port} -P {DnsttPort} -l {_sshUser} -pw *** -v -no-antispoof -batch -N 127.0.0.1");
 
             var psi = new ProcessStartInfo
             {
@@ -273,19 +295,25 @@ namespace KighmuVpnWindows.Engines
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8
             };
 
             _plinkProcess = new Process { StartInfo = psi };
+            string capturedOutput = "";
+            object outputLock = new();
             _plinkProcess.OutputDataReceived += (s, e) =>
             {
                 if (e.Data == null || !_running) return;
+                lock (outputLock) capturedOutput += e.Data + "\n";
                 if (!e.Data.Contains("lastlogon") && !e.Data.Contains("password"))
                     KighmuLogger.Info(TAG, $"plink: {e.Data}");
             };
             _plinkProcess.ErrorDataReceived += (s, e) =>
             {
                 if (e.Data == null || !_running) return;
+                lock (outputLock) capturedOutput += e.Data + "\n";
                 if (e.Data.Contains("FATAL") || e.Data.Contains("ERROR") || e.Data.Contains("fatal"))
                 {
                     KighmuLogger.Error(TAG, $"plink error: {e.Data}");
@@ -298,7 +326,6 @@ namespace KighmuVpnWindows.Engines
             };
             _plinkProcess.Exited += (s, e) =>
             {
-                KighmuLogger.Error(TAG, $"plink exited code={_plinkProcess?.ExitCode}");
                 _sshAlive = false;
             };
 
@@ -306,15 +333,32 @@ namespace KighmuVpnWindows.Engines
             _plinkProcess.BeginOutputReadLine();
             _plinkProcess.BeginErrorReadLine();
 
+            // Petit delai pour laisser plink emettre ses messages de diagnostic
+            await Task.Delay(1000);
+
+            // Verifier si plink est deja mort
+            if (_plinkProcess.HasExited)
+            {
+                string dump;
+                lock (outputLock) dump = capturedOutput;
+                KighmuLogger.Error(TAG, $"plink mort au demarrage (exit={_plinkProcess.ExitCode}). Sortie plink:\n{dump}");
+                throw new Exception($"plink mort au demarrage (exit={_plinkProcess.ExitCode})");
+            }
+
             // Attendre que plink ouvre le port SOCKS5 (max 120s)
             KighmuLogger.Info(TAG, "Attente port SOCKS5 plink...");
             bool socksReady = false;
-            for (int i = 0; i < 240; i++)
+            for (int i = 0; i < 239; i++)
             {
-                if (_plinkProcess.HasExited)
-                    throw new Exception($"plink mort au demarrage (exit={_plinkProcess.ExitCode})");
-
                 await Task.Delay(500);
+
+                if (_plinkProcess.HasExited)
+                {
+                    string dump;
+                    lock (outputLock) dump = capturedOutput;
+                    KighmuLogger.Error(TAG, $"plink mort pendant attente (exit={_plinkProcess.ExitCode}). Sortie plink:\n{dump}");
+                    throw new Exception($"plink mort pendant attente (exit={_plinkProcess.ExitCode})");
+                }
 
                 try
                 {
@@ -332,7 +376,12 @@ namespace KighmuVpnWindows.Engines
             }
 
             if (!socksReady)
+            {
+                string dump;
+                lock (outputLock) dump = capturedOutput;
+                KighmuLogger.Error(TAG, $"plink n'a pas ouvert le port SOCKS5 dans les 120s. Sortie plink:\n{dump}");
                 throw new Exception($"plink n'a pas ouvert le port SOCKS5 dans les 120s");
+            }
 
             _sshAlive = true;
 
