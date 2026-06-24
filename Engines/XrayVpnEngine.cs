@@ -265,7 +265,7 @@ namespace KighmuVpnWindows.Engines
                 "xhttp" or "splithttp"    => $"\"network\":\"xhttp\",\"xhttpSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\",\"mode\":\"auto\"}}",
                 "h2" or "http"            => $"\"network\":\"h2\",\"httpSettings\":{{\"path\":\"{p}\",\"host\":[\"{ h}\"]}}",
                 "httpupgrade"             => $"\"network\":\"httpupgrade\",\"httpupgradeSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\"}}",
-                "kcp" or "mkcp"           => $"\"network\":\"kcp\",\"kcpSettings\":{{\"mtu\":1350,\"tti\":20,\"uplinkCapacity\":5,\"downlinkCapacity\":20,\"congestion\":false,\"readBufferSize\":2,\"writeBufferSize\":2,\"header\":{{\"type\":\"none\"}}}}",
+                "kcp" or "mkcp"           => $"\"network\":\"mkcp\",\"kcpSettings\":{{\"mtu\":1350,\"tti\":20,\"uplinkCapacity\":5,\"downlinkCapacity\":20,\"congestion\":false,\"readBufferSize\":1,\"writeBufferSize\":1}}",
                 _                         => "\"network\":\"tcp\",\"tcpSettings\":{}"
             };
 
