@@ -129,30 +129,8 @@ namespace KighmuVpnWindows.Engines
             catch { }
         }
 
-        private static string BuildYaml(string tunAdapterName, int socksPort, bool udpEnabled = true, int mtu = 8500)
+                private static string BuildYaml(string tunAdapterName, int socksPort, bool udpEnabled = true, int mtu = 8500)
         {
-            string excludedRoutes = "";
-            string proxySection = "";
-            try
-            {
-                var gateway = GetDefaultGatewayForYaml();
-                if (!string.IsNullOrEmpty(gateway))
-                {
-                    var dnsServers = DetectDnsServersForYaml();
-                    foreach (var dns in dnsServers)
-                        excludedRoutes += $"    - {dns}/32\n";
-                    excludedRoutes += $"    - {gateway}/32\n";
-                    var parts = gateway.Split('.');
-                    if (parts.Length == 4)
-                        excludedRoutes += $"    - {parts[0]}.{parts[1]}.{parts[2]}.0/24\n";
-                }
-            }
-            catch { }
-            if (!string.IsNullOrEmpty(excludedRoutes))
-                proxySection = $@"proxy:
-  excluded-routes:
-{excludedRoutes}";
-
             return $@"tunnel:
   name: {tunAdapterName}
   mtu: {mtu}
@@ -164,72 +142,9 @@ socks5:
   address: 127.0.0.1
   udp: '{(udpEnabled ? "udp" : "disabled")}'
 
-{proxySection}misc:
+misc:
   log-level: warn
 ";
-        }
-
-        private static string? GetDefaultGatewayForYaml()
-        {
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "netstat",
-                    Arguments = "-rn",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                };
-                using var p = Process.Start(psi)!;
-                string output = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(3000);
-                foreach (var rawLine in output.Split('\n', '\r'))
-                {
-                    var line = rawLine.Trim();
-                    if (line.Contains("0.0.0.0") && line.Contains("0.0.0.0"))
-                    {
-                        var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length >= 3)
-                        {
-                            var addr = parts[2].Trim();
-                            if (addr.Contains(".") && addr != "0.0.0.0")
-                                return addr;
-                        }
-                    }
-                }
-            }
-            catch { }
-            return null;
-        }
-
-        private static List<string> DetectDnsServersForYaml()
-        {
-            var servers = new List<string>();
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "powershell",
-                    Arguments = "-Command \"Get-DnsClientServerAddress -AddressFamily IPv4 | Select-Object -ExpandProperty ServerAddresses\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                };
-                using var p = Process.Start(psi)!;
-                string output = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(5000);
-                foreach (var rawLine in output.Split('\n', '\r'))
-                {
-                    var ip = rawLine.Trim();
-                    if (ip.Contains(".") && System.Net.IPAddress.TryParse(ip, out _))
-                        if (!servers.Contains(ip)) servers.Add(ip);
-                }
-            }
-            catch { }
-            if (servers.Count == 0)
-                servers.AddRange(new[] { "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1" });
-            return servers;
         }
     }
 }
