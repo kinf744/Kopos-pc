@@ -3,6 +3,7 @@ using KighmuVpnWindows.Models;
 using KighmuVpnWindows.Utils;
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace KighmuVpnWindows.Vpn
