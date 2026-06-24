@@ -77,6 +77,7 @@ namespace KighmuVpnWindows.Engines
         public async Task<int> Start()
         {
             _running = true;
+            SlowDnsLogger.Begin("XrayVpnEngine", "START Xray VPN tunnel");
             KighmuLogger.Info(TAG, "Demarrage XrayVpnEngine...");
 
             try
@@ -117,6 +118,8 @@ namespace KighmuVpnWindows.Engines
             if (!ready)
                 throw new Exception("Xray n'a pas demarre dans les temps");
 
+            SlowDnsLogger.Info("XrayVpnEngine", "Xray VPN SOCKS5 ready port=" + SocksPort);
+            try { using var sk = new System.Net.Sockets.TcpClient(); var ct = sk.ConnectAsync(System.Net.IPAddress.Loopback, SocksPort); if (System.Threading.Tasks.Task.WhenAny(ct, System.Threading.Tasks.Task.Delay(2000)).GetAwaiter().GetResult() == ct && sk.Connected) { SlowDnsLogger.Info("XrayVpnEngine", "SOCKS5 test: port=" + SocksPort + " OK"); var stream = sk.GetStream(); stream.Write(new byte[] { 5, 1, 0 }, 0, 3); byte[] buf = new byte[2]; int n = stream.Read(buf, 0, 2); SlowDnsLogger.Info("XrayVpnEngine", "SOCKS5 handshake: auth=" + (n == 2 ? buf[1].ToString() : "fail")); } else SlowDnsLogger.Warn("XrayVpnEngine", "SOCKS5 test: INACCESSIBLE"); } catch (Exception ex) { SlowDnsLogger.Warn("XrayVpnEngine", "SOCKS5 test error: " + ex.Message); }
             KighmuLogger.Info(TAG, $"XrayVpnEngine pret port={SocksPort}");
             return SocksPort;
         }
@@ -318,6 +321,7 @@ namespace KighmuVpnWindows.Engines
 
         public async Task Stop()
         {
+            SlowDnsLogger.Begin("XrayVpnEngine", "STOP");
             _running = false;
             await Task.Run(() =>
             {
