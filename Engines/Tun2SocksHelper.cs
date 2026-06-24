@@ -183,8 +183,7 @@ socks5:
                 using var p = Process.Start(psi)!;
                 string output = p.StandardOutput.ReadToEnd();
                 p.WaitForExit(3000);
-                foreach (var rawLine in output.Split('
-', ''))
+                foreach (var rawLine in output.Split('\n', '\r'))
                 {
                     var line = rawLine.Trim();
                     if (line.Contains("0.0.0.0") && line.Contains("0.0.0.0"))
@@ -219,8 +218,7 @@ socks5:
                 using var p = Process.Start(psi)!;
                 string output = p.StandardOutput.ReadToEnd();
                 p.WaitForExit(5000);
-                foreach (var rawLine in output.Split('
-', ''))
+                foreach (var rawLine in output.Split('\n', '\r'))
                 {
                     var ip = rawLine.Trim();
                     if (ip.Contains(".") && System.Net.IPAddress.TryParse(ip, out _))
