@@ -6,6 +6,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace KighmuVpnWindows.Engines
