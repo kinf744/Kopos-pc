@@ -158,6 +158,17 @@ namespace KighmuVpnWindows.Engines
                 _dnsProxy = null;
             }
 
+            // Logger la config DNS Windows actuelle
+            try
+            {
+                var psi2 = new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+                var p2 = Process.Start(psi2);
+                string dnsCfg = p2!.StandardOutput.ReadToEnd();
+                p2.WaitForExit(3000);
+                SlowDnsLogger.Block(TAG, "Config DNS Windows (avant)", dnsCfg);
+            }
+            catch { }
+
             // Phase 1 : démarrer dnstt
             if (_dnsttProcess == null || _dnsttProcess.HasExited)
             {
@@ -192,6 +203,45 @@ namespace KighmuVpnWindows.Engines
 
             SlowDnsLogger.Info(TAG, $"Tunnel SlowDNS OK: SOCKS5 port={SocksPort}");
             SlowDnsLogger.Block(TAG, "Etat apres demarrage", $"Tunnel SOCKS: port={SocksPort}, dnstt running={_dnsttProcess?.HasExited == false}, plink running={_plinkProcess?.HasExited == false}");
+
+            // Snapshot etat processus
+            try
+            {
+                var procInfo = $"PID plink={_plinkProcess?.Id ?? -1} dnstt={_dnsttProcess?.Id ?? -1} tun2socks={_tun2socksProcess?.Id ?? -1}";
+                if (_plinkProcess != null && !_plinkProcess.HasExited) procInfo += $" plink_mem={_plinkProcess.PrivateMemorySize64 / 1024}KB";
+                if (_dnsttProcess != null && !_dnsttProcess.HasExited) procInfo += $" dnstt_mem={_dnsttProcess.PrivateMemorySize64 / 1024}KB";
+                SlowDnsLogger.Info(TAG, $"Processus: {procInfo}");
+            }
+            catch { }
+
+            // Test resolution DNS via le proxy local
+            try
+            {
+                if (_dnsProxy != null)
+                {
+                    SlowDnsLogger.Info(TAG, "Test resolution DNS via 127.0.0.1:53...");
+                    var dnsTestPsi = new ProcessStartInfo
+                    {
+                        FileName = "nslookup",
+                        Arguments = "google.com 127.0.0.1",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    };
+                    var dnsTestProc = Process.Start(dnsTestPsi);
+                    string dnsOut = dnsTestProc!.StandardOutput.ReadToEnd();
+                    string dnsErr = dnsTestProc.StandardError.ReadToEnd();
+                    dnsTestProc.WaitForExit(10000);
+                    bool hasResult = dnsOut.Contains("Address") || dnsOut.Contains("Non-authoritative");
+                    SlowDnsLogger.Block(TAG, "Test DNS nslookup google.com via 127.0.0.1:53",
+                        $"exit={dnsTestProc.ExitCode} ok={hasResult}\nsortie:\n{dnsOut}\n{dnsErr}");
+                }
+            }
+            catch (Exception ex)
+            {
+                SlowDnsLogger.Warn(TAG, $"Test DNS nslookup echoue: {ex.Message}");
+            }
 
             // Tester le port SOCKS5
             try
