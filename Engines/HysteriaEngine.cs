@@ -141,7 +141,7 @@ namespace KighmuVpnWindows.Engines
             var configObj = new
             {
                 server,
-                    protocol = "udp",
+                    protocol = string.IsNullOrWhiteSpace(_config.Protocol) ? "udp" : _config.Protocol,
                 obfs = _config.ObfsPassword,
                 auth_str = _config.AuthPassword,
                 up_mbps = _config.UploadMbps,
