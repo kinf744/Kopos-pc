@@ -51,13 +51,13 @@
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="REÇU" Style="{StaticResource KighmuSectionHeader}" />
-                    <TextBlock x:Name="DownloadText" Text="0 KB" Foreground="{StaticResource AccentGreenBrush}" FontWeight="Bold" />
+                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                    <TextBlock Text="REÇU" Style="{StaticResource KighmuSectionHeader}" TextAlignment="Center" />
+                    <TextBlock x:Name="DownloadText" Text="0 KB" Foreground="{StaticResource AccentGreenBrush}" FontWeight="Bold" TextAlignment="Center" />
                 </StackPanel>
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="ENVOYÉ" Style="{StaticResource KighmuSectionHeader}" />
-                    <TextBlock x:Name="UploadText" Text="0 KB" Foreground="{StaticResource AccentOrangeBrush}" FontWeight="Bold" />
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                    <TextBlock Text="ENVOYÉ" Style="{StaticResource KighmuSectionHeader}" TextAlignment="Center" />
+                    <TextBlock x:Name="UploadText" Text="0 KB" Foreground="{StaticResource AccentOrangeBrush}" FontWeight="Bold" TextAlignment="Center" />
                 </StackPanel>
             </Grid>
         </Border>
