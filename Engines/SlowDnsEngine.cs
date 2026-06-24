@@ -111,6 +111,19 @@ namespace KighmuVpnWindows.Engines
 
         public async Task<int> Start()
         {
+            SlowDnsLogger.Begin(TAG, "START tunnel SlowDNS");
+            SlowDnsLogger.Info(TAG, $"Profile: ssh={_sshUser}@{_dns.SshHost}:{_dns.SshPort} dns={_dns.DnsServer}:{_dns.DnsPort} ns={_dns.Nameserver}");
+            SlowDnsLogger.Info(TAG, $"PublicKey: {CleanPublicKey?.Substring(0, Math.Min(32, CleanPublicKey?.Length ?? 0))}...");
+            SlowDnsLogger.Info(TAG, $"SocksPort: {SocksPort}, DnsttPort: {DnsttPort}");
+
+            // Dump etat reseau avant demarrage
+            try
+            {
+                string routeTable = RunCommandCapture("route", "print -4");
+                SlowDnsLogger.Block(TAG, "Table de routage AVANT", routeTable);
+            }
+            catch { }
+
             _running = true;
             _cts = new CancellationTokenSource();
 
@@ -148,6 +161,33 @@ namespace KighmuVpnWindows.Engines
 
             // Phase 2 : plink (remplace SSH.NET)
             await StartPlink();
+
+            SlowDnsLogger.Info(TAG, $"Tunnel SlowDNS OK: SOCKS5 port={SocksPort}");
+            SlowDnsLogger.Block(TAG, "Etat apres demarrage", $"Tunnel SOCKS: port={SocksPort}, dnstt running={_dnsttProcess?.HasExited == false}, plink running={_plinkProcess?.HasExited == false}");
+
+            // Tester le port SOCKS5
+            try
+            {
+                using var sock = new System.Net.Sockets.TcpClient();
+                var conn = sock.ConnectAsync(System.Net.IPAddress.Loopback, SocksPort);
+                if (System.Threading.Tasks.Task.WhenAny(conn, System.Threading.Tasks.Task.Delay(2000)).GetAwaiter().GetResult() == conn && sock.Connected)
+                {
+                    SlowDnsLogger.Info(TAG, $"SOCKS5 port {SocksPort}: TCP OK");
+                    // Test SOCKS5 handshake
+                    var stream = sock.GetStream();
+                    byte[] greets = new byte[] { 5, 1, 0 };
+                    stream.Write(greets, 0, 3);
+                    byte[] resp = new byte[2];
+                    int nread = stream.Read(resp, 0, 2);
+                    if (nread == 2 && resp[0] == 5)
+                        SlowDnsLogger.Info(TAG, $"SOCKS5 port {SocksPort}: handshake OK (auth={resp[1]})");
+                    else
+                        SlowDnsLogger.Warn(TAG, $"SOCKS5 port {SocksPort}: handshake invalide (lu={nread} rep={string.Join(",", resp)})");
+                }
+                else
+                    SlowDnsLogger.Error(TAG, $"SOCKS5 port {SocksPort}: INACCESSIBLE");
+            }
+            catch (Exception ex) { SlowDnsLogger.Error(TAG, $"SOCKS5 test echoue: {ex.Message}"); }
 
             return SocksPort;
         }
@@ -273,6 +313,8 @@ namespace KighmuVpnWindows.Engines
                 }
 
                 string args = $"-legacy-stdio-prompts -l {_sshUser} -pw \"{_sshPass}\" -P {DnsttPort} -no-antispoof -N 127.0.0.1";
+                SlowDnsLogger.Begin(TAG, "CacheSshHostKey");
+                SlowDnsLogger.Info(TAG, "CacheSshHostKey: verification/cache de la cle SSH hote...");
                 KighmuLogger.Info(TAG, "CacheSshHostKey: verification/cache de la cle SSH hote...");
 
                 var psi = new ProcessStartInfo
@@ -364,6 +406,28 @@ namespace KighmuVpnWindows.Engines
                 KighmuLogger.Warning(TAG, $"dnstt port={DnsttPort} pas joignable, plink va probablement echouer");
 
             string args = $"-D {port} -P {DnsttPort} -l {_sshUser} -pw \"{_sshPass}\" -2 -C -v -no-antispoof -batch -N 127.0.0.1";
+            string safeArgs = args.Replace(_sshPass, "***");
+
+            SlowDnsLogger.Begin(TAG, "plink");
+            SlowDnsLogger.Info(TAG, $"plink binaire: {plinkBin}");
+            SlowDnsLogger.Info(TAG, $"plink args: -D {port} -P {DnsttPort} -l {_sshUser} -pw *** -2 -C -v -no-antispoof -batch -N 127.0.0.1");
+            SlowDnsLogger.Info(TAG, $"SOCKS5 attendu sur port {port}");
+            SlowDnsLogger.Info(TAG, $"Connexion SSH -> 127.0.0.1:{DnsttPort} via dnstt");
+
+            // Verifier que le port dnstt repond
+            try
+            {
+                using var precheck = new System.Net.Sockets.TcpClient();
+                var pc = precheck.ConnectAsync(System.Net.IPAddress.Loopback, DnsttPort);
+                if (System.Threading.Tasks.Task.WhenAny(pc, System.Threading.Tasks.Task.Delay(2000)).GetAwaiter().GetResult() == pc && precheck.Connected)
+                {
+                    precheck.Close();
+                    SlowDnsLogger.Info(TAG, $"Pre-check: port dnstt {DnsttPort} accessible");
+                }
+                else
+                    SlowDnsLogger.Error(TAG, $"Pre-check: port dnstt {DnsttPort} INJOIGNABLE");
+            }
+            catch (Exception ex) { SlowDnsLogger.Error(TAG, $"Pre-check dnstt: {ex.Message}"); }
 
             KighmuLogger.Info(TAG, $"Lancement plink: {plinkBin} -D {port} -P {DnsttPort} -l {_sshUser} -pw *** -2 -C -v -no-antispoof -batch -N 127.0.0.1");
 
@@ -386,6 +450,7 @@ namespace KighmuVpnWindows.Engines
             {
                 if (e.Data == null || !_running) return;
                 lock (outputLock) capturedOutput += e.Data + "\n";
+                SlowDnsLogger.Raw("plink", e.Data);
                 if (!e.Data.Contains("lastlogon") && !e.Data.Contains("password"))
                     KighmuLogger.Info(TAG, $"plink: {e.Data}");
             };
@@ -393,6 +458,7 @@ namespace KighmuVpnWindows.Engines
             {
                 if (e.Data == null || !_running) return;
                 lock (outputLock) capturedOutput += e.Data + "\n";
+                SlowDnsLogger.Raw("plink-err", e.Data);
                 if (e.Data.Contains("FATAL") || e.Data.Contains("ERROR") || e.Data.Contains("fatal"))
                 {
                     KighmuLogger.Error(TAG, $"plink error: {e.Data}");
@@ -405,6 +471,7 @@ namespace KighmuVpnWindows.Engines
             };
             _plinkProcess.Exited += (s, e) =>
             {
+                SlowDnsLogger.Error(TAG, $"plink EXIT code={_plinkProcess?.ExitCode}");
                 _sshAlive = false;
             };
 
@@ -426,6 +493,8 @@ namespace KighmuVpnWindows.Engines
 
             // Attendre que plink ouvre le port SOCKS5 (max 120s)
             KighmuLogger.Info(TAG, "Attente port SOCKS5 plink...");
+            SlowDnsLogger.Info(TAG, $"Attente SOCKS5 port={port} (max 120s)");
+            var socksWaitStart = DateTime.Now;
             bool socksReady = false;
             for (int i = 0; i < 239; i++)
             {
@@ -436,8 +505,14 @@ namespace KighmuVpnWindows.Engines
                     string dump;
                     lock (outputLock) dump = capturedOutput;
                     KighmuLogger.Error(TAG, $"plink mort pendant attente (exit={_plinkProcess.ExitCode}). Sortie plink:\n{dump}");
+                    SlowDnsLogger.Error(TAG, $"plink MORT pendant attente SOCKS5 (exit={_plinkProcess.ExitCode}, t={i * 500}ms)");
+                    SlowDnsLogger.Block(TAG, "Sortie plink", dump);
                     throw new Exception($"plink mort pendant attente (exit={_plinkProcess.ExitCode})");
                 }
+
+                // Toutes les 5 secondes, log un point de progression
+                if (i > 0 && i % 10 == 0)
+                    SlowDnsLogger.Info(TAG, $"Attente SOCKS5... {i * 500}ms ecoulees");
 
                 try
                 {
@@ -447,7 +522,9 @@ namespace KighmuVpnWindows.Engines
                     {
                         s.Close();
                         socksReady = true;
+                        long elapsed = (long)(DateTime.Now - socksWaitStart).TotalMilliseconds;
                         KighmuLogger.Info(TAG, $"plink SOCKS5 pret port={port} en {i * 500}ms");
+                        SlowDnsLogger.Info(TAG, $"SOCKS5 PRET: port={port} en {elapsed}ms");
                         break;
                     }
                 }
@@ -462,6 +539,7 @@ namespace KighmuVpnWindows.Engines
                 throw new Exception($"plink n'a pas ouvert le port SOCKS5 dans les 120s");
             }
 
+            SlowDnsLogger.Info(TAG, "SSH alive = true (SOCKS5 ready)");
             _sshAlive = true;
 
             var token = _cts!.Token;
@@ -523,12 +601,19 @@ namespace KighmuVpnWindows.Engines
 
         public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
+            SlowDnsLogger.Begin(TAG, "tun2socks");
+            SlowDnsLogger.Info(TAG, $"tun2socks: adapter={tunAdapterName} port={targetPort} udp=disabled mtu=1200");
             // SlowDNS: UDP desactive (SSH ne supporte pas UDP), MTU reduit (tunnel DNS lent)
             _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: false, mtu: 1200);
+            if (_tun2socksProcess == null)
+                SlowDnsLogger.Error(TAG, "tun2socks: echec demarrage (retour null)");
+            else
+                SlowDnsLogger.Info(TAG, $"tun2socks demarre PID={_tun2socksProcess.Id}");
         }
 
         public void StopDnsttOnly()
         {
+            SlowDnsLogger.Info(TAG, "StopDnsttOnly: arret dnstt");
             try { _dnsttProcess?.Kill(); } catch { }
             _dnsttProcess = null;
             _dnsttPort = 0;
@@ -536,6 +621,7 @@ namespace KighmuVpnWindows.Engines
 
         public void StopPlinkOnly()
         {
+            SlowDnsLogger.Info(TAG, "StopPlinkOnly: arret plink");
             _sshAlive = false;
             try { _plinkProcess?.Kill(); } catch { }
             _plinkProcess = null;
@@ -544,15 +630,16 @@ namespace KighmuVpnWindows.Engines
 
         public async Task Stop()
         {
+            SlowDnsLogger.Begin(TAG, "STOP");
             _running = false;
             _sshAlive = false;
             try { _cts?.Cancel(); } catch { }
 
             var stopTask = Task.Run(() =>
             {
-                try { _tun2socksProcess?.Kill(); } catch { }
-                try { _plinkProcess?.Kill(); }     catch { }
-                try { _dnsttProcess?.Kill(); }     catch { }
+                if (_tun2socksProcess != null) { SlowDnsLogger.Info(TAG, "Arret tun2socks..."); try { _tun2socksProcess.Kill(); } catch { } }
+                if (_plinkProcess != null)     { SlowDnsLogger.Info(TAG, "Arret plink..."); try { _plinkProcess.Kill(); } catch { } }
+                if (_dnsttProcess != null)     { SlowDnsLogger.Info(TAG, "Arret dnstt..."); try { _dnsttProcess.Kill(); } catch { } }
             });
             await Task.WhenAny(stopTask, Task.Delay(3000));
 
@@ -562,6 +649,7 @@ namespace KighmuVpnWindows.Engines
             _dnsttPort        = 0;
             _socksPort        = 0;
 
+            SlowDnsLogger.Info(TAG, "Tunnel SlowDNS stoppe");
             KighmuLogger.Info(TAG, "SlowDNS arrete");
         }
 
