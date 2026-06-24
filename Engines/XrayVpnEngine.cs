@@ -273,7 +273,7 @@ namespace KighmuVpnWindows.Engines
             // networkPart aussi: paires cle-valeur sans {}. On wrappe le tout dans { }.
             return !string.IsNullOrWhiteSpace(tlsPart)
                 ? $"{{{networkPart},{tlsPart}}}"
-                : $"{{{networkPart},\"security\":\"none\"}}}";
+                : $"{{{networkPart},\"security\":\"none\"}}";
         }
         private string BuildXrayConfigFromProfile(int socksPort)
         {
