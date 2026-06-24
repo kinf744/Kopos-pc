@@ -115,6 +115,8 @@ namespace KighmuVpnWindows.Engines
         public async Task<int> Start()
         {
             _running = true;
+            SlowDnsLogger.Begin("XrayDnsEngine", "START Xray-DNS tunnel");
+            try { var p = Process.Start(new ProcessStartInfo { FileName = "route", Arguments = "print -4", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (p != null) { string r = p.StandardOutput.ReadToEnd(); p.WaitForExit(3000); SlowDnsLogger.Block("XrayDnsEngine", "Table routage AVANT", r); } } catch { }
             KighmuLogger.Info(TAG, "Demarrage XrayDnsEngine (Mode 5)...");
 
             // Resoudre l'IP du resolveur DNS (cible reelle des paquets UDP de dnstt-client)
@@ -194,6 +196,8 @@ namespace KighmuVpnWindows.Engines
             }
             if (!xrayReady) throw new Exception("Xray DNS n'a pas demarre dans les temps");
 
+            SlowDnsLogger.Info("XrayDnsEngine", "SOCKS5 test port=" + SocksPort);
+            try { using var sk = new TcpClient(); var ct = sk.ConnectAsync(IPAddress.Loopback, SocksPort); if (Task.WhenAny(ct, Task.Delay(2000)).GetAwaiter().GetResult() == ct && sk.Connected) { SlowDnsLogger.Info("XrayDnsEngine", "SOCKS5 TCP OK"); var stream = sk.GetStream(); stream.Write(new byte[] { 5, 1, 0 }, 0, 3); byte[] buf = new byte[2]; int n = stream.Read(buf, 0, 2); SlowDnsLogger.Info("XrayDnsEngine", "SOCKS5 handshake: auth=" + (n == 2 ? buf[1].ToString() : "fail")); } else SlowDnsLogger.Warn("XrayDnsEngine", "SOCKS5 port INACCESSIBLE"); } catch (Exception ex) { SlowDnsLogger.Warn("XrayDnsEngine", "SOCKS5 test error: " + ex.Message); }
             KighmuLogger.Info(TAG, $"XrayDnsEngine pret port={SocksPort} dnsttPort={DnsttPort} serverIp={_resolvedServerIp}");
             return SocksPort;
         }
@@ -339,6 +343,7 @@ namespace KighmuVpnWindows.Engines
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, fileName);
             File.WriteAllText(path, jsonConfig);
+            SlowDnsLogger.Block("XrayDnsEngine", "Config JSON", jsonConfig);
             KighmuLogger.Info(TAG, $"Config Xray ecrite ({path}):\n{jsonConfig}");
             return path;
         }
@@ -401,6 +406,7 @@ namespace KighmuVpnWindows.Engines
         private void ProcessXrayLine(string? line)
         {
             if (string.IsNullOrWhiteSpace(line) || line.Length > 500) return;
+            SlowDnsLogger.Raw("XrayDnsEngine", line);
             string lower = line.ToLower();
             if (lower.Contains("started") && lower.Contains("xray"))
                 KighmuLogger.Info(TAG, "Xray DNS demarre");
@@ -421,6 +427,7 @@ namespace KighmuVpnWindows.Engines
 
         public async Task Stop()
         {
+            SlowDnsLogger.Begin("XrayDnsEngine", "STOP");
             _running = false;
             KighmuLogger.Info(TAG, "XrayDnsEngine: arret en cours...");
 
