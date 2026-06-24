@@ -305,11 +305,13 @@ namespace KighmuVpnWindows.Engines
             string lower = line.ToLower();
             if (lower.Contains("started") && lower.Contains("xray"))
                 KighmuLogger.Info(TAG, "Xray VPN demarre");
+            else if (lower.Contains("failed to dial"))
+                KighmuLogger.Warning(TAG, $"Xray dial: {line.Substring(0, Math.Min(150, line.Length))}");
             else if ((lower.Contains("error") || lower.Contains("fatal"))
                   && !lower.Contains("warning") && !lower.Contains("deprecated")
                   && !lower.Contains("connection reset") && !lower.Contains("broken pipe")
                   && !lower.Contains("eof") && !lower.Contains("use of closed")
-                  && !lower.Contains("failed to dial"))
+                  && !lower.Contains("successfully dialed") && !lower.Contains("404"))
                 KighmuLogger.Error(TAG, $"Xray: {line.Substring(0, Math.Min(150, line.Length))}");
         }
 
