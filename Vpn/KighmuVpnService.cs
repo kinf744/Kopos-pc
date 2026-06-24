@@ -284,22 +284,95 @@ namespace KighmuVpnWindows.Vpn
             var servers = new List<string>();
             try
             {
-                var psi = new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
-                using var p = Process.Start(psi);
-                string output = p!.StandardOutput.ReadToEnd();
-                p.WaitForExit(3000);
-                foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                // 1. Trouver l'interface active (celle avec la route par defaut)
+                string activeInterface = "";
+                try
                 {
-                    var t = line.Trim();
-                    if (!t.Contains("DNS") && !t.Contains("dns")) continue;
-                    var parts = t.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var part in parts)
-                        if (part.Contains(".") && System.Net.IPAddress.TryParse(part, out _))
-                            if (!servers.Contains(part)) servers.Add(part);
+                    var rp = Process.Start(new ProcessStartInfo { FileName = "route", Arguments = "print -4 0.0.0.0", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true });
+                    if (rp != null)
+                    {
+                        string routOutput = rp.StandardOutput.ReadToEnd();
+                        rp.WaitForExit(3000);
+                        foreach (var rl in routOutput.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            var rt = rl.Trim();
+                            if (!rt.StartsWith("0.0.0.0")) continue;
+                            var rparts = rt.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                            if (rparts.Length >= 4)
+                            {
+                                // La derniere colonne est le nom de l'interface ou le idx
+                                activeInterface = rparts[rparts.Length - 1];
+                                // Si c'est un nombre, chercher le nom via netsh
+                                if (int.TryParse(activeInterface, out _))
+                                {
+                                    var np = Process.Start(new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show interfaces", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true });
+                                    if (np != null)
+                                    {
+                                        string ni = np.StandardOutput.ReadToEnd();
+                                        np.WaitForExit(2000);
+                                        foreach (var nl in ni.Split('\n'))
+                                        {
+                                            if (nl.Contains(activeInterface))
+                                            {
+                                                var np2 = nl.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                                                if (np2.Length >= 5) activeInterface = string.Join(" ", np2, 4, np2.Length - 4);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // 2. Chercher le DNS specifiquement sur cette interface
+                if (!string.IsNullOrWhiteSpace(activeInterface))
+                {
+                    var psi = new ProcessStartInfo { FileName = "netsh", Arguments = $"interface ipv4 show dns "{activeInterface}"", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+                    using var p = Process.Start(psi);
+                    if (p != null)
+                    {
+                        string output = p.StandardOutput.ReadToEnd();
+                        p.WaitForExit(3000);
+                        foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            var t = line.Trim();
+                            if (!t.Contains("DNS") && !t.Contains("dns")) continue;
+                            var parts = t.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var part in parts)
+                                if (part.Contains(".") && System.Net.IPAddress.TryParse(part, out _))
+                                    if (!servers.Contains(part)) servers.Add(part);
+                        }
+                    }
+                }
+
+                // 3. Fallback : tous les DNS si l'interface specifique n'a rien donne
+                if (servers.Count == 0)
+                {
+                    var psi = new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+                    using var p = Process.Start(psi);
+                    if (p != null)
+                    {
+                        string output = p.StandardOutput.ReadToEnd();
+                        p.WaitForExit(3000);
+                        foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            var t = line.Trim();
+                            if (!t.Contains("DNS") && !t.Contains("dns")) continue;
+                            var parts = t.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var part in parts)
+                                if (part.Contains(".") && System.Net.IPAddress.TryParse(part, out _))
+                                    if (!servers.Contains(part)) servers.Add(part);
+                        }
+                    }
                 }
             }
             catch { }
             if (servers.Count == 0) servers.AddRange(new[] { "8.8.8.8", "8.8.4.4", "1.1.1.1" });
+            SlowDnsLogger.Info("KighmuVpnService", "DNS detectes: " + string.Join(", ", servers) + " interface=" + activeInterface);
             return servers;
         }
     }
