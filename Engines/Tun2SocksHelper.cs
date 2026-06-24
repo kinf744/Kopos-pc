@@ -131,6 +131,7 @@ namespace KighmuVpnWindows.Engines
         private static string BuildYaml(string tunAdapterName, int socksPort, bool udpEnabled = true, int mtu = 8500)
         {
             string excludedRoutes = "";
+            string proxySection = "";
             try
             {
                 var gateway = GetDefaultGatewayForYaml();
@@ -139,17 +140,17 @@ namespace KighmuVpnWindows.Engines
                     var dnsServers = DetectDnsServersForYaml();
                     foreach (var dns in dnsServers)
                         excludedRoutes += $"    - {dns}/32\n";
-
-                    // Exclure la passerelle (peut servir de DNS)
                     excludedRoutes += $"    - {gateway}/32\n";
-
-                    // Exclure le sous-reseau local (ex: 192.168.54.0/24)
                     var parts = gateway.Split('.');
                     if (parts.Length == 4)
                         excludedRoutes += $"    - {parts[0]}.{parts[1]}.{parts[2]}.0/24\n";
                 }
             }
             catch { }
+            if (!string.IsNullOrEmpty(excludedRoutes))
+                proxySection = $@"proxy:
+  excluded-routes:
+{excludedRoutes}";
 
             return $@"tunnel:
   name: {tunAdapterName}
@@ -162,9 +163,7 @@ socks5:
   address: 127.0.0.1
   udp: '{(udpEnabled ? "udp" : "disabled")}'
 
-proxy:
-  excluded-routes:
-{excludedRoutes}misc:
+{proxySection}misc:
   log-level: warn
 ";
         }
@@ -175,8 +174,8 @@ proxy:
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "route",
-                    Arguments = "print -4 0.0.0.0",
+                    FileName = "netstat",
+                    Arguments = "-rn",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     CreateNoWindow = true
@@ -184,14 +183,18 @@ proxy:
                 using var p = Process.Start(psi)!;
                 string output = p.StandardOutput.ReadToEnd();
                 p.WaitForExit(3000);
-                foreach (var rawLine in output.Split('\n', '\r'))
+                foreach (var rawLine in output.Split("\n", "\r"))
                 {
                     var line = rawLine.Trim();
-                    if (line.StartsWith("0.0.0.0"))
+                    if (line.Contains("0.0.0.0") && line.Contains("0.0.0.0"))
                     {
                         var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length >= 3 && parts[2].Contains("."))
-                            return parts[2];
+                        if (parts.Length >= 3)
+                        {
+                            var addr = parts[2].Trim();
+                            if (addr.Contains(".") && addr != "0.0.0.0")
+                                return addr;
+                        }
                     }
                 }
             }
@@ -206,32 +209,23 @@ proxy:
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "netsh",
-                    Arguments = "interface ipv4 show dns",
+                    FileName = "powershell",
+                    Arguments = "-Command "Get-DnsClientServerAddress -AddressFamily IPv4 | Select-Object -ExpandProperty ServerAddresses"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     CreateNoWindow = true
                 };
                 using var p = Process.Start(psi)!;
                 string output = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(3000);
-                foreach (var rawLine in output.Split('\n', '\r'))
+                p.WaitForExit(5000);
+                foreach (var rawLine in output.Split("\n", "\r"))
                 {
-                    var line = rawLine.Trim();
-                    if (!line.Contains("DNS") || !line.Contains(".")) continue;
-                    var parts = line.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var part in parts)
-                    {
-                        if (part.Contains('.') && System.Net.IPAddress.TryParse(part, out _))
-                        {
-                            if (!servers.Contains(part))
-                                servers.Add(part);
-                        }
-                    }
+                    var ip = rawLine.Trim();
+                    if (ip.Contains(".") && System.Net.IPAddress.TryParse(ip, out _))
+                        if (!servers.Contains(ip)) servers.Add(ip);
                 }
             }
             catch { }
-            // Fallback DNS connus
             if (servers.Count == 0)
                 servers.AddRange(new[] { "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1" });
             return servers;
