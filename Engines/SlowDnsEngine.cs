@@ -52,10 +52,12 @@ namespace KighmuVpnWindows.Engines
         private volatile bool _running;
         private volatile bool _sshAlive;
         public volatile bool IsDegraded;
+        public bool HasDnsProxy => _dnsProxy != null;
 
         private Process? _plinkProcess;
         private Process? _dnsttProcess;
         private Process? _tun2socksProcess;
+        private DnsProxy? _dnsProxy;
         private CancellationTokenSource? _cts;
 
         private string CleanPublicKey => (_dns.PublicKey ?? "")
@@ -132,6 +134,29 @@ namespace KighmuVpnWindows.Engines
 
             if (string.IsNullOrWhiteSpace(_dns.Nameserver)) throw new Exception("Nameserver manquant");
             if (string.IsNullOrWhiteSpace(CleanPublicKey)) throw new Exception("Public Key manquante");
+
+            // Phase 0 : demarrer le proxy DNS local (DNS bypass tunnel)
+            try
+            {
+                string? physIp = DetectPhysicalIp();
+                var dnsServers = DetectSystemDnsServers();
+                if (!string.IsNullOrEmpty(physIp) && dnsServers.Count > 0)
+                {
+                    string upstreamDns = dnsServers[0];
+                    int upstreamPort = 53;
+                    _dnsProxy = new DnsProxy(upstreamDns, upstreamPort, physIp, 53);
+                    _dnsProxy.Start();
+                    SlowDnsLogger.Info(TAG, $"DnsProxy: 127.0.0.1:53 -> {upstreamDns}:{upstreamPort} (bind={physIp})");
+                }
+                else
+                    SlowDnsLogger.Warn(TAG, $"DnsProxy: impossible detecter IP physique={physIp ?? "(null)"} DNS={dnsServers.Count}");
+            }
+            catch (Exception ex)
+            {
+                SlowDnsLogger.Warn(TAG, $"DnsProxy start error: {ex.Message}");
+                try { _dnsProxy?.Dispose(); } catch { }
+                _dnsProxy = null;
+            }
 
             // Phase 1 : démarrer dnstt
             if (_dnsttProcess == null || _dnsttProcess.HasExited)
@@ -652,10 +677,73 @@ namespace KighmuVpnWindows.Engines
             _dnsttPort        = 0;
             _socksPort        = 0;
 
+            if (_dnsProxy != null)
+            {
+                SlowDnsLogger.Info(TAG, "Arret DnsProxy...");
+                _dnsProxy.Dispose();
+                _dnsProxy = null;
+            }
             SlowDnsLogger.Info(TAG, "Tunnel SlowDNS stoppe");
             KighmuLogger.Info(TAG, "SlowDNS arrete");
         }
 
         public bool IsRunning() => _running && _sshAlive;
+
+        private string? DetectPhysicalIp()
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "route",
+                    Arguments = "print -4 0.0.0.0",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                };
+                using var p = Process.Start(psi);
+                string output = p!.StandardOutput.ReadToEnd();
+                p.WaitForExit(3000);
+                foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var t = line.Trim();
+                    if (!t.StartsWith("0.0.0.0")) continue;
+                    var parts = t.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 4 && parts[3].Contains("."))
+                        return parts[3];
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private List<string> DetectSystemDnsServers()
+        {
+            var servers = new List<string>();
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "powershell",
+                    Arguments = "-Command \"Get-DnsClientServerAddress -AddressFamily IPv4 | Select-Object -ExpandProperty ServerAddresses\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                };
+                using var p = Process.Start(psi);
+                string output = p!.StandardOutput.ReadToEnd();
+                p.WaitForExit(5000);
+                foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var ip = line.Trim();
+                    if (!string.IsNullOrEmpty(ip) && System.Net.IPAddress.TryParse(ip, out _))
+                        if (!servers.Contains(ip)) servers.Add(ip);
+                }
+            }
+            catch { }
+            if (servers.Count == 0)
+                servers.AddRange(new[] { "8.8.8.8", "8.8.4.4", "1.1.1.1" });
+            return servers;
+        }
     }
 }
