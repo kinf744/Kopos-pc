@@ -187,7 +187,7 @@ namespace KighmuVpnWindows.Engines
 
                 obj["inbounds"] = cleaned;
 
-                // Supprimer allowInsecure des tlsSettings
+                // Normaliser outbounds (conserver allowInsecure pour SNI non-matchant)
                 var outbounds = obj["outbounds"] as JArray;
                 if (outbounds != null)
                 {
@@ -197,7 +197,6 @@ namespace KighmuVpnWindows.Engines
                         var tls = ss?["tlsSettings"] as JObject;
                         if (tls != null)
                         {
-                            tls.Remove("allowInsecure");
                             ss!["tlsSettings"] = tls;
                             ob["streamSettings"] = ss;
                         }
