@@ -293,7 +293,7 @@ namespace KighmuVpnWindows.Vpn
                 {
                     string ni = np.StandardOutput.ReadToEnd();
                     np.WaitForExit(2000);
-                    foreach (var nl in ni.Split(new[] { '\\n', '\\r' }, StringSplitOptions.RemoveEmptyEntries))
+                    foreach (var nl in ni.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
                     {
                         var trimmed = nl.Trim();
                         if (!trimmed.Contains("connected")) continue;
@@ -318,7 +318,7 @@ namespace KighmuVpnWindows.Vpn
                     {
                         string output = p.StandardOutput.ReadToEnd();
                         p.WaitForExit(3000);
-                        foreach (var line in output.Split(new[] { '\\n', '\\r' }, StringSplitOptions.RemoveEmptyEntries))
+                        foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
                         {
                             var t = line.Trim();
                             if (!t.Contains("DNS") && !t.Contains("dns")) continue;
@@ -339,7 +339,7 @@ namespace KighmuVpnWindows.Vpn
                     {
                         string output = p.StandardOutput.ReadToEnd();
                         p.WaitForExit(3000);
-                        foreach (var line in output.Split(new[] { '\\n', '\\r' }, StringSplitOptions.RemoveEmptyEntries))
+                        foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
                         {
                             var t = line.Trim();
                             if (!t.Contains("DNS") && !t.Contains("dns")) continue;
