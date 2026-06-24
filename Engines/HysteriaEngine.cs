@@ -75,10 +75,14 @@ namespace KighmuVpnWindows.Engines
             {
                 var entry = await Dns.GetHostEntryAsync(_config.ServerAddress);
                 ip = entry.AddressList.Length > 0 ? entry.AddressList[0].ToString() : _config.ServerAddress;
+                KighmuLogger.Info(TAG, $"DNS résolu: {_config.ServerAddress} -> {ip}");
+                SlowDnsLogger.Info("HysteriaEngine", "DNS OK: " + _config.ServerAddress + " -> " + ip);
             }
-            catch
+            catch (Exception ex)
             {
                 ip = _config.ServerAddress;
+                KighmuLogger.Error(TAG, $"DIAG: Échec résolution DNS pour '{_config.ServerAddress}' — {ex.GetType().Name}: {ex.Message}");
+                SlowDnsLogger.Error("HysteriaEngine", "DIAG DNS FAIL: " + ex.GetType().Name + ": " + ex.Message);
             }
             _resolvedServerIp = ip;
 
@@ -89,9 +93,15 @@ namespace KighmuVpnWindows.Engines
 
             string configFile = WriteConfig(server);
             string binary = GetBinaryPath("hysteria.exe");
+
+            // DIAG: Vérification du binaire
             if (!File.Exists(binary))
                 throw new Exception("hysteria.exe introuvable dans bin/win");
-            SlowDnsLogger.Info("HysteriaEngine", "Binaire: " + binary);
+            var binInfo = new System.IO.FileInfo(binary);
+            if (binInfo.Length == 0)
+                throw new Exception("hysteria.exe corrompu (0 octets). Binaire invalide.");
+            KighmuLogger.Info(TAG, $"Binaire OK: {binInfo.Length} octets, modifié le {binInfo.LastWriteTime}");
+            SlowDnsLogger.Info("HysteriaEngine", "Binaire: " + binary + " (" + binInfo.Length + " octets)");
             try { var vi = Process.Start(new ProcessStartInfo { FileName = binary, Arguments = "--version", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (vi != null) { string vout = vi.StandardOutput.ReadToEnd(); vi.WaitForExit(2000); SlowDnsLogger.Block("HysteriaEngine", "Version hysteria", vout); } } catch (Exception exv) { SlowDnsLogger.Warn("HysteriaEngine", "Version check: " + exv.Message); }
 
             try { _hysteriaProcess?.Kill(); } catch { /* ignore */ }
@@ -107,7 +117,20 @@ namespace KighmuVpnWindows.Engines
             {
                 if (_hysteriaProcess == null || _hysteriaProcess.HasExited)
                 {
-                    KighmuLogger.Error(TAG, $"Hysteria process mort prematurement a {i*500}ms exit={_hysteriaProcess?.ExitCode}");
+                    int? exitCode = _hysteriaProcess?.ExitCode;
+                    string diag = exitCode switch
+                    {
+                        -1073741515 => "BINAIRE INCOMPATIBLE (0xC0000135 — DLL manquante ou wrong architecture)",
+                        -1073741701 => "BINAIRE INCOMPATIBLE (0xC000007B — not a valid Win32 application)",
+                        -1073741819 => "BLOQUÉ PAR ANTI-VIRUS (0xC0000005 — access violation)",
+                        -1073741502 => "BLOQUÉ PAR ANTI-VIRUS (0xC000013A — process terminated)",
+                        1            => "ERREUR CONFIG (exit 1 — JSON invalide ou paramètre manquant)",
+                        2            => "ERREUR CONFIG (exit 2 — fichier config introuvable ou illisible)",
+                        null         => "PROCESSUS NON DÉMARRÉ (Process.Start a échoué)",
+                        _            => $"EXIT CODE {exitCode}"
+                    };
+                    KighmuLogger.Error(TAG, $"DIAG: Hysteria process mort prématurément à {i*500}ms — {diag}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG: " + diag);
                     break;
                 }
                 if (i % 4 == 0) KighmuLogger.Info(TAG, $"Attente Hysteria... {i*500}ms serverConnected={_serverConnected} socksPort={_socksPort}");
@@ -119,7 +142,16 @@ namespace KighmuVpnWindows.Engines
             try { SlowDnsLogger.Block("HysteriaEngine", "hysteria output complet", _hysteriaCaptured); } catch { }
 
             if (!_serverConnected)
-                throw new Exception($"Hysteria: connexion serveur impossible (port={_socksPort})");
+            {
+                string raison = "connexion serveur impossible";
+                if (_hysteriaProcess != null && _hysteriaProcess.HasExited)
+                    raison = "processus hysteria.exe terminé avant connexion";
+                else if (!string.IsNullOrWhiteSpace(_config.ServerAddress))
+                    raison = $"serveur '{_config.ServerAddress}:{portHopping}' injoignable (timeout 15s)";
+                KighmuLogger.Error(TAG, $"DIAG: {raison}");
+                SlowDnsLogger.Error("HysteriaEngine", "DIAG: " + raison);
+                throw new Exception($"Hysteria: {raison} (port={_socksPort})");
+            }
 
             SlowDnsLogger.Info("HysteriaEngine", "Hysteria SOCKS5 ready port=" + _socksPort);
             try { using var sk = new System.Net.Sockets.TcpClient(); var ct = sk.ConnectAsync(System.Net.IPAddress.Loopback, _socksPort); if (System.Threading.Tasks.Task.WhenAny(ct, System.Threading.Tasks.Task.Delay(2000)).GetAwaiter().GetResult() == ct && sk.Connected) { SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 test: port=" + _socksPort + " OK"); var stream = sk.GetStream(); stream.Write(new byte[] { 5, 1, 0 }, 0, 3); byte[] buf = new byte[2]; int n = stream.Read(buf, 0, 2); SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 handshake: auth=" + (n == 2 ? buf[1].ToString() : "fail")); } else SlowDnsLogger.Warn("HysteriaEngine", "SOCKS5 test: INACCESSIBLE"); } catch (Exception ex) { SlowDnsLogger.Warn("HysteriaEngine", "SOCKS5 test error: " + ex.Message); }
@@ -202,8 +234,29 @@ namespace KighmuVpnWindows.Engines
                 }
                 else if (lineLower.Contains("error") || lineLower.Contains("fatal"))
                 {
-                    KighmuLogger.Error(TAG, $"Hysteria: {e.Data}");
-                        SlowDnsLogger.Error("HysteriaEngine", e.Data);
+                    string diag = DiagnostiquerErreurHysteria(e.Data, lineLower);
+                    KighmuLogger.Error(TAG, $"Hysteria erreur: {e.Data} — {diag}");
+                    SlowDnsLogger.Error("HysteriaEngine", "ERR: " + e.Data + " — " + diag);
+                }
+                else if (lineLower.Contains("json") || lineLower.Contains("parse") || lineLower.Contains("unmarshal"))
+                {
+                    KighmuLogger.Error(TAG, $"DIAG CONFIG: Erreur dans le fichier JSON de configuration — {e.Data}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG CONFIG: " + e.Data);
+                }
+                else if (lineLower.Contains("refused") || lineLower.Contains("timeout") || lineLower.Contains("no route"))
+                {
+                    KighmuLogger.Error(TAG, $"DIAG SERVEUR: Problème réseau — serveur injoignable — {e.Data}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG SERVEUR: " + e.Data);
+                }
+                else if (lineLower.Contains("certificate") || lineLower.Contains("tls") || lineLower.Contains("handshake"))
+                {
+                    KighmuLogger.Error(TAG, $"DIAG SERVEUR: Erreur TLS/certificat — {e.Data}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG SERVEUR TLS: " + e.Data);
+                }
+                else if (lineLower.Contains("permission") || lineLower.Contains("denied") || lineLower.Contains("access"))
+                {
+                    KighmuLogger.Error(TAG, $"DIAG PC: Blocage pare-feu/antivirus — permission refusée — {e.Data}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG PC: " + e.Data);
                 }
             };
 
@@ -228,8 +281,31 @@ namespace KighmuVpnWindows.Engines
                     KighmuLogger.Info(TAG, "Hysteria connecte (stderr) \u2705");
                 }
                 else if (lineLowerErr.Contains("error") || lineLowerErr.Contains("fatal"))
-                    KighmuLogger.Error(TAG, $"Hysteria(stderr): {e.Data}");
-                        SlowDnsLogger.Error("HysteriaEngine", "[stderr] " + e.Data);
+                {
+                    string diag = DiagnostiquerErreurHysteria(e.Data, lineLowerErr);
+                    KighmuLogger.Error(TAG, $"Hysteria erreur(stderr): {e.Data} — {diag}");
+                    SlowDnsLogger.Error("HysteriaEngine", "ERR(stderr): " + e.Data + " — " + diag);
+                }
+                else if (lineLowerErr.Contains("json") || lineLowerErr.Contains("parse") || lineLowerErr.Contains("unmarshal"))
+                {
+                    KighmuLogger.Error(TAG, $"DIAG CONFIG: Erreur dans le fichier JSON de configuration — {e.Data}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG CONFIG: " + e.Data);
+                }
+                else if (lineLowerErr.Contains("refused") || lineLowerErr.Contains("timeout") || lineLowerErr.Contains("no route"))
+                {
+                    KighmuLogger.Error(TAG, $"DIAG SERVEUR: Problème réseau — serveur injoignable — {e.Data}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG SERVEUR: " + e.Data);
+                }
+                else if (lineLowerErr.Contains("certificate") || lineLowerErr.Contains("tls") || lineLowerErr.Contains("handshake"))
+                {
+                    KighmuLogger.Error(TAG, $"DIAG SERVEUR: Erreur TLS/certificat — {e.Data}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG SERVEUR TLS: " + e.Data);
+                }
+                else if (lineLowerErr.Contains("permission") || lineLowerErr.Contains("denied") || lineLowerErr.Contains("access"))
+                {
+                    KighmuLogger.Error(TAG, $"DIAG PC: Blocage pare-feu/antivirus — permission refusée — {e.Data}");
+                    SlowDnsLogger.Error("HysteriaEngine", "DIAG PC: " + e.Data);
+                }
             };
             _hysteriaProcess.Exited += (s, e) =>
             {
@@ -243,6 +319,34 @@ namespace KighmuVpnWindows.Engines
             _hysteriaProcess.BeginErrorReadLine();
             KighmuLogger.Info(TAG, "Hysteria PID demarre: " + _hysteriaProcess.Id);
             SlowDnsLogger.Info("HysteriaEngine", "Hysteria demarre PID=" + _hysteriaProcess.Id + " cmd=" + binary + " client --config " + configFile);
+        }
+
+        /// <summary>
+        /// Diagnostique les erreurs hysteria pour catégoriser la cause racine.
+        /// </summary>
+        private static string DiagnostiquerErreurHysteria(string raw, string lower)
+        {
+            if (lower.Contains("json") || lower.Contains("parse") || lower.Contains("unmarshal") || lower.Contains("syntax"))
+                return "CONFIG: JSON invalide dans le fichier de configuration";
+            if (lower.Contains("refused"))
+                return "SERVEUR: Connexion refusée — le serveur n'écoute pas sur ce port ou est down";
+            if (lower.Contains("timeout"))
+                return "SERVEUR: Timeout — le serveur ne répond pas (firewall ou panne)";
+            if (lower.Contains("no route"))
+                return "PC/RÉSEAU: Pas de route vers le serveur (pare-feu local ou hors-ligne)";
+            if (lower.Contains("certificate") || lower.Contains("cert") || lower.Contains("tls") || lower.Contains("handshake"))
+                return "SERVEUR: Problème de certificat TLS — serveur mal configuré";
+            if (lower.Contains("permission") || lower.Contains("denied") || lower.Contains("access") || lower.Contains("blocked"))
+                return "PC: Pare-feu ou antivirus bloque hysteria.exe";
+            if (lower.Contains("protocol") || lower.Contains("version") || lower.Contains("incompatible"))
+                return "BINAIRE/SERVEUR: Incompatibilité de version entre client et serveur hysteria";
+            if (lower.Contains("dns"))
+                return "PC/RÉSEAU: Échec de résolution DNS";
+            if (lower.Contains("buffer") || lower.Contains("memory") || lower.Contains("alloc"))
+                return "PC: Mémoire insuffisante ou allocation échouée";
+            if (lower.Contains("socket"))
+                return "PC: Impossible de créer un socket (pare-feu ou limite système)";
+            return "Cause non identifiée — voir le message ci-dessus";
         }
 
         /// <summary>
