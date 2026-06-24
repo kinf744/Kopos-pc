@@ -132,7 +132,80 @@ namespace KighmuVpnWindows.UI.Dialogs
                 Padding         = new Thickness(8),
                 BorderThickness = new Thickness(0)
             };
+            panelLink.Children.Add(etLink);
 
+            // Bouton Parser
+            var parserRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 8) };
+            var btnParser = new Button
+            {
+                Content    = "Parser le lien",
+                Padding    = new Thickness(12, 4, 12, 4),
+                Background = accentBrush,
+                Foreground = Brushes.White,
+                Cursor     = System.Windows.Input.Cursors.Hand
+            };
+            parserRow.Children.Add(btnParser);
+
+            // Champs parses (affiches apres parser)
+            var parsedPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
+            var parsedFields = new System.Windows.Controls.Grid();
+            parsedFields.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            parsedFields.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            int pfRow = 0;
+            void AddParsedField(string label, string value)
+            {
+                parsedFields.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                parsedFields.Children.Add(new TextBlock
+                {
+                    Text = label, Foreground = hintBrush, FontSize = 11,
+                    Margin = new Thickness(0, 2, 8, 2), VerticalAlignment = VerticalAlignment.Center
+                });
+                System.Windows.Controls.Grid.SetRow(parsedFields.Children[parsedFields.Children.Count - 1], pfRow);
+                System.Windows.Controls.Grid.SetColumn(parsedFields.Children[parsedFields.Children.Count - 1], 0);
+                var tb = new TextBlock
+                {
+                    Text = value, Foreground = textBrush, FontSize = 11,
+                    Margin = new Thickness(0, 2, 0, 2), TextWrapping = TextWrapping.Wrap
+                };
+                parsedFields.Children.Add(tb);
+                System.Windows.Controls.Grid.SetRow(parsedFields.Children[parsedFields.Children.Count - 1], pfRow);
+                System.Windows.Controls.Grid.SetColumn(parsedFields.Children[parsedFields.Children.Count - 1], 1);
+                pfRow++;
+            }
+
+            TextBlock? parsedProto = null, parsedServer = null, parsedPort = null, parsedUuid = null, parsedTransport = null, parsedTls = null;
+
+            btnParser.Click += (s2, e2) =>
+            {
+                var link = etLink.Text.Trim();
+                if (string.IsNullOrWhiteSpace(link)) return;
+                var tmp = new XrayVpnProfile();
+                XrayVpnProfile.ParseLinkIntoProfile(link, tmp);
+                parsedFields.Children.Clear();
+                parsedFields.RowDefinitions.Clear();
+                pfRow = 0;
+                AddParsedField("Protocole", tmp.Protocol);
+                AddParsedField("Serveur", tmp.ServerAddress);
+                AddParsedField("Port", tmp.ServerPort.ToString());
+                AddParsedField("UUID", tmp.Uuid);
+                AddParsedField("Transport", tmp.Transport);
+                AddParsedField("TLS", tmp.Tls ? "oui" : "non");
+                AddParsedField("SNI", tmp.Sni);
+                AddParsedField("Path", tmp.WsPath);
+                AddParsedField("Host", tmp.WsHost);
+                if (!string.IsNullOrWhiteSpace(tmp.Fingerprint))
+                    AddParsedField("Fingerprint", tmp.Fingerprint);
+                if (!string.IsNullOrWhiteSpace(tmp.PublicKey))
+                    AddParsedField("PublicKey", tmp.PublicKey);
+                if (!string.IsNullOrWhiteSpace(tmp.Flow))
+                    AddParsedField("Flow", tmp.Flow);
+                parsedPanel.Visibility = Visibility.Visible;
+            };
+
+            parserRow.Children.Add(btnParser);
+            panelLink.Children.Add(parserRow);
+            panelLink.Children.Add(parsedPanel);
+            panelLink.Children.Add(parsedFields);
 
             layout.Children.Add(panelLink);
 
