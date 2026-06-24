@@ -49,6 +49,8 @@ namespace KighmuVpnWindows.Engines
         public async Task<int> Start()
         {
             _cts = new CancellationTokenSource();
+            SlowDnsLogger.Begin("MultiHttpProxy", "START Multi-HTTP-Proxy tunnel");
+            try { var pi = new ProcessStartInfo { FileName = "route", Arguments = "print -4", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }; var pr = Process.Start(pi); string rt = pr!.StandardOutput.ReadToEnd(); pr.WaitForExit(3000); SlowDnsLogger.Block("MultiHttpProxy", "Table de routage AVANT", rt); } catch { }
             var repo     = new HttpProxyProfileRepository();
             var selected = repo.GetSelected();
 
@@ -76,6 +78,7 @@ namespace KighmuVpnWindows.Engines
             for (int idx = 0; idx < selected.Count; idx++)
             {
                 var profile = selected[idx];
+                SlowDnsLogger.Info("MultiHttpProxy", "Profil[" + (idx+1) + "/" + selected.Count + "] demarrage: " + profile.ProfileName);
                 KighmuLogger.Info(TAG, $"Profil[{idx + 1}/{selected.Count}] demarrage: {profile.ProfileName}");
 
                 int  port    = -1;
@@ -108,6 +111,7 @@ namespace KighmuVpnWindows.Engines
                         if (port > 0)
                         {
                             lock (_enginesLock) { _engines.Add(engine); }
+                            SlowDnsLogger.Info("MultiHttpProxy", "Profil[" + (idx+1) + "] CONNECTE port=" + port);
                             KighmuLogger.Info(TAG, $"Profil[{idx + 1}] CONNECTE port={port}");
                         }
                         else
@@ -150,6 +154,7 @@ namespace KighmuVpnWindows.Engines
             }
 
             int finalPort = successPorts.Count > 1 ? SocksBalancer.BalancerPort : successPorts[0];
+            SlowDnsLogger.Info("MultiHttpProxy", "HTTP ready port=" + finalPort + " tunnels=" + successPorts.Count);
             KighmuLogger.Info(TAG, $"=== HTTP Proxy pret port={finalPort} {successPorts.Count} tunnel(s) ===");
             return finalPort;
         }
@@ -166,6 +171,7 @@ namespace KighmuVpnWindows.Engines
 
         public async Task Stop()
         {
+            SlowDnsLogger.Begin("MultiHttpProxy", "STOP");
             KighmuLogger.Info(TAG, "Arret MultiHttpProxyEngine...");
             try { _cts?.Cancel(); } catch { }
             try { _socksBalancer?.Stop(); _socksBalancer = null; } catch { }
