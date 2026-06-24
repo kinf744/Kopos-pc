@@ -3,6 +3,7 @@ using KighmuVpnWindows.Models;
 using KighmuVpnWindows.Utils;
 using System;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace KighmuVpnWindows.Vpn
 {
@@ -101,6 +102,10 @@ namespace KighmuVpnWindows.Vpn
                         KighmuLogger.Info(TAG, "DNS TUN pointe vers 127.0.0.1 (DnsProxy)");
                     }
                 }
+
+                // Dump table de routage et DNS apres configuration
+                try { var rp = Process.Start(new ProcessStartInfo { FileName = "route", Arguments = "print -4", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (rp != null) { string rt = rp.StandardOutput.ReadToEnd(); rp.WaitForExit(3000); SlowDnsLogger.Block(TAG, "Table de routage APRES routes", rt); } } catch { }
+                try { var dp = Process.Start(new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (dp != null) { string dc = dp.StandardOutput.ReadToEnd(); dp.WaitForExit(3000); SlowDnsLogger.Block(TAG, "Config DNS Windows (apres)", dc); } } catch { }
                 if (!routesOk)
                     throw new Exception("Impossible de configurer le routage systeme (verifiez les droits administrateur).");
 
