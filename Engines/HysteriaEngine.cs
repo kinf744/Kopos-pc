@@ -61,6 +61,7 @@ namespace KighmuVpnWindows.Engines
         public async Task<int> Start()
         {
             _running = true;
+            SlowDnsLogger.Begin("HysteriaEngine", "START Hysteria tunnel");
             _serverConnected = false;
 
             string ip;
@@ -108,6 +109,8 @@ namespace KighmuVpnWindows.Engines
             if (!_serverConnected)
                 throw new Exception($"Hysteria: connexion serveur impossible (port={_socksPort})");
 
+            SlowDnsLogger.Info("HysteriaEngine", "Hysteria SOCKS5 ready port=" + _socksPort);
+            try { using var sk = new System.Net.Sockets.TcpClient(); var ct = sk.ConnectAsync(System.Net.IPAddress.Loopback, _socksPort); if (System.Threading.Tasks.Task.WhenAny(ct, System.Threading.Tasks.Task.Delay(2000)).GetAwaiter().GetResult() == ct && sk.Connected) { SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 test: port=" + _socksPort + " OK"); var stream = sk.GetStream(); stream.Write(new byte[] { 5, 1, 0 }, 0, 3); byte[] buf = new byte[2]; int n = stream.Read(buf, 0, 2); SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 handshake: auth=" + (n == 2 ? buf[1].ToString() : "fail")); } else SlowDnsLogger.Warn("HysteriaEngine", "SOCKS5 test: INACCESSIBLE"); } catch (Exception ex) { SlowDnsLogger.Warn("HysteriaEngine", "SOCKS5 test error: " + ex.Message); }
             KighmuLogger.Info(TAG, $"Hysteria prêt sur port {_socksPort} ✅");
             return _socksPort;
         }
@@ -215,6 +218,7 @@ namespace KighmuVpnWindows.Engines
             _hysteriaProcess.BeginOutputReadLine();
             _hysteriaProcess.BeginErrorReadLine();
             KighmuLogger.Info(TAG, "Hysteria PID démarré: " + _hysteriaProcess.Id);
+            SlowDnsLogger.Info("HysteriaEngine", "Hysteria PID=" + _hysteriaProcess.Id + " memKB=" + (_hysteriaProcess.PrivateMemorySize64 / 1024).ToString("F0"));
         }
 
         /// <summary>
@@ -241,6 +245,7 @@ namespace KighmuVpnWindows.Engines
 
         public async Task Stop()
         {
+            SlowDnsLogger.Begin("HysteriaEngine", "STOP");
             _running = false;
             _serverConnected = false;
             KighmuLogger.Info(TAG, "Arrêt forcé de Hysteria et tun2socks...");
