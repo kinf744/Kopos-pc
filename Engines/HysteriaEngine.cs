@@ -186,7 +186,7 @@ namespace KighmuVpnWindows.Engines
                 SlowDnsLogger.Raw("hysteria-stdout", e.Data);
                 KighmuLogger.Info(TAG, $"[stdout] {e.Data}");
                 bool looksConnected = lineLower.Contains("connected") ||
-                    (lineLower.Contains("socks5") && e.Data.Contains("127.0.0.1:")) ||
+                    (lineLower.Contains("socks5") && e.Data.Contains("127.0.0.1:") && !e.Data.Contains("config:")) ||
                     (lineLower.Contains("udp") && (lineLower.Contains("session") || lineLower.Contains("running")));
 
                 if (looksConnected && !loggedConnected)
@@ -215,7 +215,7 @@ namespace KighmuVpnWindows.Engines
                 SlowDnsLogger.Raw("hysteria-stderr", e.Data);
                 KighmuLogger.Info(TAG, $"[stderr] {e.Data}");
                 bool looksConnectedErr = lineLowerErr.Contains("connected") ||
-                    (lineLowerErr.Contains("socks5") && e.Data.Contains("127.0.0.1:")) ||
+                    (lineLowerErr.Contains("socks5") && e.Data.Contains("127.0.0.1:") && !e.Data.Contains("config:")) ||
                     (lineLowerErr.Contains("udp") && (lineLowerErr.Contains("session") || lineLowerErr.Contains("running")));
                 if (looksConnectedErr && !loggedConnected)
                 {
