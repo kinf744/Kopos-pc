@@ -183,7 +183,8 @@ socks5:
                 using var p = Process.Start(psi)!;
                 string output = p.StandardOutput.ReadToEnd();
                 p.WaitForExit(3000);
-                foreach (var rawLine in output.Split("\n", "\r"))
+                foreach (var rawLine in output.Split('
+', ''))
                 {
                     var line = rawLine.Trim();
                     if (line.Contains("0.0.0.0") && line.Contains("0.0.0.0"))
@@ -210,7 +211,7 @@ socks5:
                 var psi = new ProcessStartInfo
                 {
                     FileName = "powershell",
-                    Arguments = "-Command "Get-DnsClientServerAddress -AddressFamily IPv4 | Select-Object -ExpandProperty ServerAddresses"",
+                    Arguments = "-Command \"Get-DnsClientServerAddress -AddressFamily IPv4 | Select-Object -ExpandProperty ServerAddresses\"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     CreateNoWindow = true
@@ -218,7 +219,8 @@ socks5:
                 using var p = Process.Start(psi)!;
                 string output = p.StandardOutput.ReadToEnd();
                 p.WaitForExit(5000);
-                foreach (var rawLine in output.Split("\n", "\r"))
+                foreach (var rawLine in output.Split('
+', ''))
                 {
                     var ip = rawLine.Trim();
                     if (ip.Contains(".") && System.Net.IPAddress.TryParse(ip, out _))
