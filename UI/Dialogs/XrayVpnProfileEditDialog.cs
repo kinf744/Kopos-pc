@@ -144,8 +144,6 @@ namespace KighmuVpnWindows.UI.Dialogs
                 Foreground = Brushes.White,
                 Cursor     = System.Windows.Input.Cursors.Hand
             };
-            parserRow.Children.Add(btnParser);
-
             // Champs parses (affiches apres parser)
             var parsedPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
             var parsedFields = new System.Windows.Controls.Grid();
