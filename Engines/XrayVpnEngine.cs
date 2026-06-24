@@ -247,7 +247,7 @@ namespace KighmuVpnWindows.Engines
             }
         }
 
-        private string BuildStreamSettings(string transport)
+                private string BuildStreamSettings(string transport)
         {
             string net     = transport.ToLower();
             string tlsPart = BuildTlsPart();
@@ -269,16 +269,12 @@ namespace KighmuVpnWindows.Engines
                 _                         => "\"network\":\"tcp\",\"tcpSettings\":{}"
             };
 
-            // BuildTlsPart() retourne deja "security":"tls","tlsSettings":{...} ou "security":"reality",...
-            // networkPart a ses propres accolades {}. On combine sans ajouter d'accolades supplementaires.
-            // BuildTlsPart() retourne deja "security":"tls","tlsSettings":{...} (sans accolades exterieures)
-            // networkPart n'a plus d'accolades non plus. On wrappe le tout dans { }.
+            // BuildTlsPart() contient deja "security":"tls","tlsSettings":{...} (sans accolades exterieures)
+            // networkPart aussi: paires cle-valeur sans {}. On wrappe le tout dans { }.
             return !string.IsNullOrWhiteSpace(tlsPart)
                 ? $"{{{networkPart},{tlsPart}}}"
                 : $"{{{networkPart},\"security\":\"none\"}}}";
-                : $"{networkPart},\"security\":\"none\"";
         }
-
         private string BuildXrayConfigFromProfile(int socksPort)
         {
             string proto  = _profile.Protocol;
