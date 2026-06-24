@@ -119,7 +119,10 @@ namespace KighmuVpnWindows.Engines
             // Dump etat reseau avant demarrage
             try
             {
-                string routeTable = RunCommandCapture("route", "print -4");
+                var psi = new ProcessStartInfo { FileName = "route", Arguments = "print -4", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+                var p = Process.Start(psi);
+                string routeTable = p!.StandardOutput.ReadToEnd();
+                p.WaitForExit(3000);
                 SlowDnsLogger.Block(TAG, "Table de routage AVANT", routeTable);
             }
             catch { }
