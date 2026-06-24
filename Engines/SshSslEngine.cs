@@ -85,6 +85,8 @@ namespace KighmuVpnWindows.Engines
         public async Task<int> Start()
         {
             _running = true;
+            SlowDnsLogger.Begin("SshSslEngine", "START SSH-SSL tunnel");
+            try { var pi = new ProcessStartInfo { FileName = "route", Arguments = "print -4", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }; var pr = Process.Start(pi); string rt = pr!.StandardOutput.ReadToEnd(); pr.WaitForExit(3000); SlowDnsLogger.Block("SshSslEngine", "Table de routage AVANT", rt); } catch { }
             _cts     = new CancellationTokenSource();
 
             if (string.IsNullOrWhiteSpace(_sslConfig.SshHost))
@@ -97,6 +99,7 @@ namespace KighmuVpnWindows.Engines
             // ── Phase 1 : Connexion TLS vers le serveur ──────────────────────────
             var sslStream = await BuildSslStreamAsync();
             _sslStream    = sslStream;
+            SlowDnsLogger.Info("SshSslEngine", "SSL handshake OK host=" + _sslConfig.SshHost + ":" + _sslConfig.SshPort);
             KighmuLogger.Info(TAG, "SSL handshake OK");
 
             // ── Phase 2 : Bridge local TCP ↔ SslStream ───────────────────────────
@@ -201,6 +204,7 @@ namespace KighmuVpnWindows.Engines
             if (!client2.IsConnected)
                 throw new Exception($"SSH auth echoue pour {_sslConfig.SshUser}");
 
+            SlowDnsLogger.Info("SshSslEngine", "SSH auth OK user=" + _sslConfig.SshUser);
             KighmuLogger.Info(TAG, "Auth complete");
 
             int socksPort = SocksPort;
@@ -229,6 +233,8 @@ namespace KighmuVpnWindows.Engines
                 }
             }, token);
 
+            SlowDnsLogger.Info("SshSslEngine", "SSH-SSL SOCKS5 ready port=" + socksPort);
+            try { using var sk = new System.Net.Sockets.TcpClient(); var ct = sk.ConnectAsync(System.Net.IPAddress.Loopback, socksPort); if (System.Threading.Tasks.Task.WhenAny(ct, System.Threading.Tasks.Task.Delay(2000)).GetAwaiter().GetResult() == ct && sk.Connected) { SlowDnsLogger.Info("SshSslEngine", "SOCKS5 test: port=" + socksPort + " OK"); var stream = sk.GetStream(); stream.Write(new byte[] { 5, 1, 0 }, 0, 3); byte[] buf = new byte[2]; int n = stream.Read(buf, 0, 2); SlowDnsLogger.Info("SshSslEngine", "SOCKS5 handshake: auth=" + (n == 2 ? buf[1].ToString() : "fail")); } else SlowDnsLogger.Warn("SshSslEngine", "SOCKS5 test: INACCESSIBLE"); } catch (Exception ex) { SlowDnsLogger.Warn("SshSslEngine", "SOCKS5 test error: " + ex.Message); }
             KighmuLogger.Info(TAG, $"SSH SSL/TLS connecte port={socksPort}");
             return socksPort;
         }
@@ -298,6 +304,7 @@ namespace KighmuVpnWindows.Engines
 
         public async Task Stop()
         {
+            SlowDnsLogger.Begin("SshSslEngine", "STOP");
             _running  = false;
             _sshAlive = false;
             try { _cts?.Cancel(); } catch { }
