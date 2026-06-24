@@ -50,7 +50,7 @@ namespace KighmuVpnWindows.Utils
         {
             if (!IsEnabled) return;
             Write("BLOCK", tag, $">>> {title} <<<");
-            foreach (var line in content.Split(new[] { '\r\n', '\n', '\r' }, StringSplitOptions.None))
+            foreach (var line in content.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None))
             {
                 if (!string.IsNullOrEmpty(line))
                     Raw(tag, "  | " + line);
