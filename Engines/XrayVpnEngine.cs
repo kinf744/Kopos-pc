@@ -260,20 +260,22 @@ namespace KighmuVpnWindows.Engines
 
             string networkPart = net switch
             {
-                "ws"                      => $"{{\"network\":\"ws\",\"wsSettings\":{{\"path\":\"{p}\",\"headers\":{{\"Host\":\"{h}\"}}}}}}",
-                "grpc"                    => $"{{\"network\":\"grpc\",\"grpcSettings\":{{\"serviceName\":\"{grpcSvc}\",\"multiMode\":false}}}}",
-                "xhttp" or "splithttp"    => $"{{\"network\":\"xhttp\",\"xhttpSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\",\"mode\":\"auto\"}}}}",
-                "h2" or "http"            => $"{{\"network\":\"h2\",\"httpSettings\":{{\"path\":\"{p}\",\"host\":[\"{ h}\"]}}}}",
-                "httpupgrade"             => $"{{\"network\":\"httpupgrade\",\"httpupgradeSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\"}}}}",
-                "kcp" or "mkcp"           => $"{{\"network\":\"kcp\",\"kcpSettings\":{{\"mtu\":1350,\"tti\":20,\"uplinkCapacity\":5,\"downlinkCapacity\":20,\"congestion\":false,\"readBufferSize\":2,\"writeBufferSize\":2,\"header\":{{\"type\":\"none\"}}}}}}",
-                _                         => "{\"network\":\"tcp\",\"tcpSettings\":{}}"
+                "ws"                      => $"\"network\":\"ws\",\"wsSettings\":{{\"path\":\"{p}\",\"headers\":{{\"Host\":\"{h}\"}}}}",
+                "grpc"                    => $"\"network\":\"grpc\",\"grpcSettings\":{{\"serviceName\":\"{grpcSvc}\",\"multiMode\":false}}",
+                "xhttp" or "splithttp"    => $"\"network\":\"xhttp\",\"xhttpSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\",\"mode\":\"auto\"}}",
+                "h2" or "http"            => $"\"network\":\"h2\",\"httpSettings\":{{\"path\":\"{p}\",\"host\":[\"{ h}\"]}}",
+                "httpupgrade"             => $"\"network\":\"httpupgrade\",\"httpupgradeSettings\":{{\"path\":\"{p}\",\"host\":\"{h}\"}}",
+                "kcp" or "mkcp"           => $"\"network\":\"kcp\",\"kcpSettings\":{{\"mtu\":1350,\"tti\":20,\"uplinkCapacity\":5,\"downlinkCapacity\":20,\"congestion\":false,\"readBufferSize\":2,\"writeBufferSize\":2,\"header\":{{\"type\":\"none\"}}}}",
+                _                         => "\"network\":\"tcp\",\"tcpSettings\":{}"
             };
 
             // BuildTlsPart() retourne deja "security":"tls","tlsSettings":{...} ou "security":"reality",...
             // networkPart a ses propres accolades {}. On combine sans ajouter d'accolades supplementaires.
-            // Si tlsPart est vide, on ajoute "security":"none".
+            // BuildTlsPart() retourne deja "security":"tls","tlsSettings":{...} (sans accolades exterieures)
+            // networkPart n'a plus d'accolades non plus. On wrappe le tout dans { }.
             return !string.IsNullOrWhiteSpace(tlsPart)
-                ? $"{networkPart},{tlsPart}"
+                ? $"{{{networkPart},{tlsPart}}}"
+                : $"{{{networkPart},\"security\":\"none\"}}}";
                 : $"{networkPart},\"security\":\"none\"";
         }
 
