@@ -201,6 +201,7 @@ namespace KighmuVpnWindows.Engines
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, fileName);
             File.WriteAllText(path, jsonConfig);
+            SlowDnsLogger.Block("XrayVpnEngine", "Config JSON", jsonConfig);
             return path;
         }
 
@@ -300,6 +301,7 @@ namespace KighmuVpnWindows.Engines
         private void ProcessXrayLine(string? line)
         {
             if (string.IsNullOrWhiteSpace(line) || line.Length > 500) return;
+            SlowDnsLogger.Raw("XrayVpnEngine", line);
             string lower = line.ToLower();
             if (lower.Contains("started") && lower.Contains("xray"))
                 KighmuLogger.Info(TAG, "Xray VPN demarre");
