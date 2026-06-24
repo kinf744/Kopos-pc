@@ -26,6 +26,8 @@ namespace KighmuVpnWindows.Engines
         private readonly int _profileIndex;
 
         private volatile bool _running;
+        private string _hysteriaCaptured = "";
+        private readonly object _captureLock = new();
         private volatile bool _serverConnected;
         private string? _resolvedServerIp;
 
@@ -62,6 +64,10 @@ namespace KighmuVpnWindows.Engines
         {
             _running = true;
             SlowDnsLogger.Begin("HysteriaEngine", "START Hysteria tunnel");
+            SlowDnsLogger.Info("HysteriaEngine", "=== DEBUT HYSTERIA ===");
+            try { var p = Process.Start(new ProcessStartInfo { FileName = "route", Arguments = "print -4", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (p != null) { string r = p.StandardOutput.ReadToEnd(); p.WaitForExit(3000); SlowDnsLogger.Block("HysteriaEngine", "Table routage AVANT", r); } } catch { }
+            try { var p = Process.Start(new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (p != null) { string r = p.StandardOutput.ReadToEnd(); p.WaitForExit(3000); SlowDnsLogger.Block("HysteriaEngine", "DNS AVANT", r); } } catch { }
+            try { var p = Process.Start(new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show interfaces", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (p != null) { string r = p.StandardOutput.ReadToEnd(); p.WaitForExit(3000); SlowDnsLogger.Block("HysteriaEngine", "Interfaces AVANT", r); } } catch { }
             _serverConnected = false;
 
             string ip;
@@ -78,17 +84,21 @@ namespace KighmuVpnWindows.Engines
 
             string portHopping = string.IsNullOrWhiteSpace(_config.PortHopping) ? "20000-50000" : _config.PortHopping;
             string server = $"{ip}:{portHopping}";
-            KighmuLogger.Info(TAG, $"Démarrage Hysteria: {server}");
+            KighmuLogger.Info(TAG, $"Demarrage Hysteria: {server}");
+            SlowDnsLogger.Info("HysteriaEngine", "Serveur cible: " + server + " socksPort=" + _socksPort + " auth=" + (_config.AuthPassword ?? "(none)") + " obfs=" + (_config.ObfsPassword ?? "(none)") + " up=" + _config.UploadMbps + " down=" + _config.DownloadMbps);
 
             string configFile = WriteConfig(server);
             string binary = GetBinaryPath("hysteria.exe");
             if (!File.Exists(binary))
                 throw new Exception("hysteria.exe introuvable dans bin/win");
+            SlowDnsLogger.Info("HysteriaEngine", "Binaire: " + binary + "
+try { var vi = Process.Start(new ProcessStartInfo { FileName = binary, Arguments = "version", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (vi != null) { string vout = vi.StandardOutput.ReadToEnd(); vi.WaitForExit(2000); SlowDnsLogger.Block("HysteriaEngine", "Version hysteria", vout); } } catch (Exception exv) { SlowDnsLogger.Warn("HysteriaEngine", "Version check: " + exv.Message); }
 
             try { _hysteriaProcess?.Kill(); } catch { /* ignore */ }
             _hysteriaProcess = null;
 
             KighmuLogger.Info(TAG, $"Lancement hysteria.exe: {binary} client --config {configFile}");
+            SlowDnsLogger.Info("HysteriaEngine", "Lancement: " + binary + " client --config " + configFile);
             StartHysteriaProcess(binary, configFile);
 
             // Attendre connexion serveur via les logs (max 15s)
@@ -101,17 +111,21 @@ namespace KighmuVpnWindows.Engines
                     break;
                 }
                 if (i % 4 == 0) KighmuLogger.Info(TAG, $"Attente Hysteria... {i*500}ms serverConnected={_serverConnected} socksPort={_socksPort}");
+                        SlowDnsLogger.Info("HysteriaEngine", "Attente " + (i*500) + "ms sc=" + _serverConnected + " sp=" + _socksPort);
                 await Task.Delay(500);
             }
 
-            KighmuLogger.Info(TAG, $"Fin attente: serverConnected={_serverConnected} socksPort={_socksPort} processAlive={_hysteriaProcess != null && !_hysteriaProcess.HasExited}");
+            SlowDnsLogger.Info("HysteriaEngine", "Fin attente: sc=" + _serverConnected + " sp=" + _socksPort + " a=" + (_hysteriaProcess != null && !_hysteriaProcess.HasExited));
+            try { SlowDnsLogger.Block("HysteriaEngine", "hysteria output complet", _hysteriaCaptured); } catch { }
 
             if (!_serverConnected)
                 throw new Exception($"Hysteria: connexion serveur impossible (port={_socksPort})");
 
             SlowDnsLogger.Info("HysteriaEngine", "Hysteria SOCKS5 ready port=" + _socksPort);
             try { using var sk = new System.Net.Sockets.TcpClient(); var ct = sk.ConnectAsync(System.Net.IPAddress.Loopback, _socksPort); if (System.Threading.Tasks.Task.WhenAny(ct, System.Threading.Tasks.Task.Delay(2000)).GetAwaiter().GetResult() == ct && sk.Connected) { SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 test: port=" + _socksPort + " OK"); var stream = sk.GetStream(); stream.Write(new byte[] { 5, 1, 0 }, 0, 3); byte[] buf = new byte[2]; int n = stream.Read(buf, 0, 2); SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 handshake: auth=" + (n == 2 ? buf[1].ToString() : "fail")); } else SlowDnsLogger.Warn("HysteriaEngine", "SOCKS5 test: INACCESSIBLE"); } catch (Exception ex) { SlowDnsLogger.Warn("HysteriaEngine", "SOCKS5 test error: " + ex.Message); }
-            KighmuLogger.Info(TAG, $"Hysteria prêt sur port {_socksPort} ✅");
+            SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 test TCP+UDP port=" + _socksPort);
+            try { using var sk = new TcpClient(); var ct = sk.ConnectAsync(IPAddress.Loopback, _socksPort); if (Task.WhenAny(ct, Task.Delay(2000)).GetAwaiter().GetResult() == ct && sk.Connected) { SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 TCP OK"); var stream = sk.GetStream(); stream.Write(new byte[] { 5, 1, 0 }, 0, 3); byte[] buf = new byte[2]; int n = stream.Read(buf, 0, 2); SlowDnsLogger.Info("HysteriaEngine", "SOCKS5 handshake: auth=" + (n == 2 ? buf[1].ToString() : "fail")); stream.Write(new byte[] { 5, 3, 0, 1, 0, 0, 0, 0, 0, 0 }, 0, 10); byte[] udpResp = new byte[10]; int un = stream.Read(udpResp, 0, 10); if (un >= 4 && udpResp[0] == 5 && udpResp[1] == 0) { int udpPort = (udpResp[8] << 8) | udpResp[9]; SlowDnsLogger.Info("HysteriaEngine", "UDP ASSOCIATE OK port=" + udpPort); } else SlowDnsLogger.Warn("HysteriaEngine", "UDP ASSOCIATE: rep=" + string.Join(",", udpResp)); } else SlowDnsLogger.Error("HysteriaEngine", "SOCKS5 port INACCESSIBLE"); } catch (Exception ex) { SlowDnsLogger.Error("HysteriaEngine", "SOCKS5 test error: " + ex.Message); }
+            SlowDnsLogger.Info("HysteriaEngine", "Hysteria PRET port=" + _socksPort);
             return _socksPort;
         }
 
@@ -140,6 +154,7 @@ namespace KighmuVpnWindows.Engines
             };
 
             File.WriteAllText(path, JsonConvert.SerializeObject(configObj, Formatting.Indented));
+            try { SlowDnsLogger.Block("HysteriaEngine", "Config JSON", File.ReadAllText(path)); } catch { }
             KighmuLogger.Info(TAG, $"Config écrite: {server}");
             return path;
         }
@@ -167,6 +182,8 @@ namespace KighmuVpnWindows.Engines
                 if (e.Data == null || !_running) return;
                 string lineLower = e.Data.ToLowerInvariant();
 
+                lock (_captureLock) _hysteriaCaptured += e.Data + "\n";
+                SlowDnsLogger.Raw("hysteria-stdout", e.Data);
                 KighmuLogger.Info(TAG, $"[stdout] {e.Data}");
                 bool looksConnected = lineLower.Contains("connected") ||
                     (lineLower.Contains("socks5") && e.Data.Contains("127.0.0.1:")) ||
@@ -179,11 +196,13 @@ namespace KighmuVpnWindows.Engines
                     var match = Regex.Match(e.Data, @"127\.0\.0\.1:(\d+)");
                     if (match.Success && int.TryParse(match.Groups[1].Value, out int port) && port > 0)
                         _socksPort = port;
-                    KighmuLogger.Info(TAG, "Hysteria connecté ✅");
+                    KighmuLogger.Info(TAG, "Hysteria connecte");
+                        SlowDnsLogger.Info("HysteriaEngine", "DETECTED CONNECTED: " + e.Data);
                 }
                 else if (lineLower.Contains("error") || lineLower.Contains("fatal"))
                 {
-                    KighmuLogger.Error(TAG, $"Hysteria erreur: {e.Data}");
+                    KighmuLogger.Error(TAG, $"Hysteria: {e.Data}");
+                        SlowDnsLogger.Error("HysteriaEngine", e.Data);
                 }
             };
 
@@ -192,6 +211,8 @@ namespace KighmuVpnWindows.Engines
             {
                 if (e.Data == null || !_running) return;
                 string lineLowerErr = e.Data.ToLowerInvariant();
+                lock (_captureLock) _hysteriaCaptured += e.Data + "\n";
+                SlowDnsLogger.Raw("hysteria-stderr", e.Data);
                 KighmuLogger.Info(TAG, $"[stderr] {e.Data}");
                 bool looksConnectedErr = lineLowerErr.Contains("connected") ||
                     (lineLowerErr.Contains("socks5") && e.Data.Contains("127.0.0.1:")) ||
@@ -206,19 +227,21 @@ namespace KighmuVpnWindows.Engines
                     KighmuLogger.Info(TAG, "Hysteria connecte (stderr) \u2705");
                 }
                 else if (lineLowerErr.Contains("error") || lineLowerErr.Contains("fatal"))
-                    KighmuLogger.Error(TAG, $"Hysteria erreur(stderr): {e.Data}");
+                    KighmuLogger.Error(TAG, $"Hysteria(stderr): {e.Data}");
+                        SlowDnsLogger.Error("HysteriaEngine", "[stderr] " + e.Data);
             };
             _hysteriaProcess.Exited += (s, e) =>
             {
                 KighmuLogger.Info(TAG, $"Hysteria exit: {_hysteriaProcess?.ExitCode}");
+                SlowDnsLogger.Error("HysteriaEngine", "PROCESS EXIT code=" + (_hysteriaProcess?.ExitCode ?? -99));
                 _serverConnected = false;
             };
 
             _hysteriaProcess.Start();
             _hysteriaProcess.BeginOutputReadLine();
             _hysteriaProcess.BeginErrorReadLine();
-            KighmuLogger.Info(TAG, "Hysteria PID démarré: " + _hysteriaProcess.Id);
-            SlowDnsLogger.Info("HysteriaEngine", "Hysteria PID=" + _hysteriaProcess.Id + " memKB=" + (_hysteriaProcess.PrivateMemorySize64 / 1024).ToString("F0"));
+            KighmuLogger.Info(TAG, "Hysteria PID demarre: " + _hysteriaProcess.Id);
+            SlowDnsLogger.Info("HysteriaEngine", "Hysteria demarre PID=" + _hysteriaProcess.Id + " cmd=" + binary + " client --config " + configFile);
         }
 
         /// <summary>
@@ -248,7 +271,9 @@ namespace KighmuVpnWindows.Engines
             SlowDnsLogger.Begin("HysteriaEngine", "STOP");
             _running = false;
             _serverConnected = false;
-            KighmuLogger.Info(TAG, "Arrêt forcé de Hysteria et tun2socks...");
+            SlowDnsLogger.Info("HysteriaEngine", "Arret Hysteria tunnel");
+            try { SlowDnsLogger.Block("HysteriaEngine", "hysteria output final", _hysteriaCaptured); } catch { }
+            try { var p = Process.Start(new ProcessStartInfo { FileName = "route", Arguments = "print -4", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (p != null) { string r = p.StandardOutput.ReadToEnd(); p.WaitForExit(3000); SlowDnsLogger.Block("HysteriaEngine", "Table routage APRES", r); } } catch { }
 
             await Task.Run(() =>
             {
@@ -258,7 +283,8 @@ namespace KighmuVpnWindows.Engines
 
             _tun2socksProcess = null;
             _hysteriaProcess = null;
-            KighmuLogger.Info(TAG, "Hysteria arrêté ✅");
+            SlowDnsLogger.Info("HysteriaEngine", "Hysteria arrete");
+            KighmuLogger.Info(TAG, "Hysteria arrete");
         }
 
         public bool IsRunning() => _running && _serverConnected;
