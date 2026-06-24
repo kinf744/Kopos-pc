@@ -101,6 +101,8 @@ namespace KighmuVpnWindows.Engines
         public async Task<int> Start()
         {
             _running = true;
+            SlowDnsLogger.Begin("HttpProxyEngine", "START HTTP-Proxy tunnel");
+            try { var pi = new ProcessStartInfo { FileName = "route", Arguments = "print -4", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }; var pr = Process.Start(pi); string rt = pr!.StandardOutput.ReadToEnd(); pr.WaitForExit(3000); SlowDnsLogger.Block("HttpProxyEngine", "Table de routage AVANT", rt); } catch { }
             _cts = new CancellationTokenSource();
 
             if (string.IsNullOrWhiteSpace(_proxyHost)) throw new Exception("Proxy Host manquant");
