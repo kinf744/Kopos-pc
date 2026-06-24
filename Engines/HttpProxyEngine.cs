@@ -263,6 +263,8 @@ namespace KighmuVpnWindows.Engines
                 }
             }, token);
 
+            SlowDnsLogger.Info("HttpProxyEngine", "HTTP Proxy SOCKS5 ready port=" + socksPort);
+            try { using var sk = new System.Net.Sockets.TcpClient(); var ct = sk.ConnectAsync(System.Net.IPAddress.Loopback, socksPort); if (System.Threading.Tasks.Task.WhenAny(ct, System.Threading.Tasks.Task.Delay(2000)).GetAwaiter().GetResult() == ct && sk.Connected) { SlowDnsLogger.Info("HttpProxyEngine", "SOCKS5 test: port=" + socksPort + " OK"); var stream = sk.GetStream(); stream.Write(new byte[] { 5, 1, 0 }, 0, 3); byte[] buf = new byte[2]; int n = stream.Read(buf, 0, 2); SlowDnsLogger.Info("HttpProxyEngine", "SOCKS5 handshake: auth=" + (n == 2 ? buf[1].ToString() : "fail")); } else SlowDnsLogger.Warn("HttpProxyEngine", "SOCKS5 test: INACCESSIBLE"); } catch (Exception ex) { SlowDnsLogger.Warn("HttpProxyEngine", "SOCKS5 test error: " + ex.Message); }
             KighmuLogger.Info(TAG, $"HTTP Proxy prêt SOCKS5 port={socksPort}");
             return socksPort;
         }
@@ -352,6 +354,7 @@ namespace KighmuVpnWindows.Engines
 
         public async Task Stop()
         {
+            SlowDnsLogger.Begin("HttpProxyEngine", "STOP");
             _running  = false;
             _sshAlive = false;
             try { _cts?.Cancel(); } catch { }
