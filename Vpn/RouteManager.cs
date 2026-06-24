@@ -251,7 +251,7 @@ namespace KighmuVpnWindows.Vpn
             }
         }
 
-        private static int? GetAdapterIndex(string adapterName)
+        public static int? GetAdapterIndex(string adapterName)
         {
             string output = RunCommandCapture("netsh", "interface ipv4 show interfaces");
             foreach (var rawLine in output.Split('\n'))
