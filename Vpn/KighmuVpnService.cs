@@ -4,6 +4,7 @@ using KighmuVpnWindows.Utils;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Net.NetworkInformation;
 using System.Diagnostics;
 
 namespace KighmuVpnWindows.Vpn
@@ -26,6 +27,7 @@ namespace KighmuVpnWindows.Vpn
         // ── Etat ─────────────────────────────────────────────────────────────
         private ITunnelEngine?   _engine;
         private DnsProxy?          _dnsProxy;
+        private TrafficMonitor?    _trafficMonitor;
         private ConnectionStatus _status = ConnectionStatus.DISCONNECTED;
 
         public ConnectionStatus Status => _status;
@@ -35,6 +37,7 @@ namespace KighmuVpnWindows.Vpn
         public event Action<ConnectionStatus>? StatusChanged;
         public event Action<string>?           ErrorOccurred;
         public event Action<TunnelMode>?        ActiveModeChanged;
+        public event Action<long, long>?          TrafficUpdated;
 
         // ── API publique ──────────────────────────────────────────────────────
 
@@ -134,6 +137,22 @@ namespace KighmuVpnWindows.Vpn
 
                 SetStatus(ConnectionStatus.CONNECTED);
                 KighmuLogger.Info(TAG, "Tunnel actif !");
+
+                // 6. Demarrer le monitoring de trafic (polling adaptateur TUN)
+                try
+                {
+                    _trafficMonitor = new TrafficMonitor(TUN_ADAPTER);
+                    _trafficMonitor.TrafficUpdated += (rx, tx) =>
+                    {
+                        try { TrafficUpdated?.Invoke(rx, tx); }
+                        catch { }
+                    };
+                    _trafficMonitor.Start();
+                }
+                catch (Exception ex)
+                {
+                    KighmuLogger.Warn(TAG, $"TrafficMonitor start error: {ex.Message}");
+                }
             }
             catch (Exception ex)
             {
@@ -175,6 +194,13 @@ namespace KighmuVpnWindows.Vpn
                     await _engine.Stop();
                     _engine = null;
                     KighmuLogger.Info(TAG, "Engine arrete");
+                }
+
+                // 2b. Arreter le monitoring de trafic
+                if (_trafficMonitor != null)
+                {
+                    _trafficMonitor.Dispose();
+                    _trafficMonitor = null;
                 }
 
                 // 3. Delai de securite : laisser Windows liberer les ressources
