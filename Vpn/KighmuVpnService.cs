@@ -24,6 +24,7 @@ namespace KighmuVpnWindows.Vpn
 
         // ── Etat ─────────────────────────────────────────────────────────────
         private ITunnelEngine?   _engine;
+        private DnsProxy?          _dnsProxy;
         private ConnectionStatus _status = ConnectionStatus.DISCONNECTED;
 
         public ConnectionStatus Status => _status;
@@ -60,7 +61,28 @@ namespace KighmuVpnWindows.Vpn
 
             try
             {
-                // 1. Creer l'engine selon le mode actif
+                // 1. Demarrer le proxy DNS local (DNS bypass tunnel)
+                try
+                {
+                    string? physIp = DetectPhysicalIp();
+                    var dnsServers = DetectSystemDnsServers();
+                    if (!string.IsNullOrEmpty(physIp) && dnsServers.Count > 0)
+                    {
+                        _dnsProxy = new DnsProxy(dnsServers[0], 53, physIp, 53);
+                        _dnsProxy.Start();
+                        KighmuLogger.Info(TAG, $"DnsProxy: 127.0.0.1:53 -> {dnsServers[0]}:53 (bind={physIp})");
+                    }
+                    else
+                        KighmuLogger.Warn(TAG, $"DnsProxy: detect IP={physIp ?? "(null)"} DNS={dnsServers.Count}");
+                }
+                catch (Exception ex)
+                {
+                    KighmuLogger.Warn(TAG, $"DnsProxy start error: {ex.Message}");
+                    try { _dnsProxy?.Dispose(); } catch { }
+                    _dnsProxy = null;
+                }
+
+                // 2. Creer l'engine selon le mode actif
                 _engine = TunnelEngineFactory.Create();
                 KighmuLogger.Info(TAG, $"Engine cree: {_engine.GetType().Name}");
 
@@ -86,7 +108,7 @@ namespace KighmuVpnWindows.Vpn
                 // Attendre que hev-socks5-tunnel ait cree l'adaptateur Wintun (max 5s)
                 await Task.Delay(1500);
                 bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER, serverIp: serverIp, dnsServer: "8.8.8.8");
-                if (routesOk && _engine is Engines.SlowDnsEngine slowDns && slowDns.HasDnsProxy)
+                if (routesOk && _dnsProxy != null)
                 {
                     int? idx = RouteManager.GetAdapterIndex(TUN_ADAPTER);
                     if (idx.HasValue)
@@ -135,9 +157,16 @@ namespace KighmuVpnWindows.Vpn
             try
             {
                 // 1. Supprimer les routes AVANT de tuer les processus
-                // (evite que du trafic soit route vers un tunnel mort)
                 RouteManager.RemoveRoutes();
                 KighmuLogger.Info(TAG, "Routes supprimees");
+
+                // 1b. Arreter le proxy DNS local
+                if (_dnsProxy != null)
+                {
+                    _dnsProxy.Dispose();
+                    _dnsProxy = null;
+                    KighmuLogger.Info(TAG, "DnsProxy arrete");
+                }
 
                 // 2. Arreter l'engine (tue les processus et attend leur fin)
                 if (_engine != null)
@@ -200,6 +229,51 @@ namespace KighmuVpnWindows.Vpn
             _status = status;
             KighmuLogger.Info(TAG, $"Status -> {status}");
             StatusChanged?.Invoke(status);
+        }
+
+        private static string? DetectPhysicalIp()
+        {
+            try
+            {
+                var psi = new ProcessStartInfo { FileName = "route", Arguments = "print -4 0.0.0.0", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+                using var p = Process.Start(psi);
+                string output = p!.StandardOutput.ReadToEnd();
+                p.WaitForExit(3000);
+                foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var t = line.Trim();
+                    if (!t.StartsWith("0.0.0.0")) continue;
+                    var parts = t.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 4 && parts[3].Contains("."))
+                        return parts[3];
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private static List<string> DetectSystemDnsServers()
+        {
+            var servers = new List<string>();
+            try
+            {
+                var psi = new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+                using var p = Process.Start(psi);
+                string output = p!.StandardOutput.ReadToEnd();
+                p.WaitForExit(3000);
+                foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var t = line.Trim();
+                    if (!t.Contains("DNS") && !t.Contains("dns")) continue;
+                    var parts = t.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var part in parts)
+                        if (part.Contains('.') && System.Net.IPAddress.TryParse(part, out _))
+                            if (!servers.Contains(part)) servers.Add(part);
+                }
+            }
+            catch { }
+            if (servers.Count == 0) servers.AddRange(new[] { "8.8.8.8", "8.8.4.4", "1.1.1.1" });
+            return servers;
         }
     }
 }
