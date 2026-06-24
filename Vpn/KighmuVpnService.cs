@@ -294,7 +294,7 @@ namespace KighmuVpnWindows.Vpn
                     if (!t.Contains("DNS") && !t.Contains("dns")) continue;
                     var parts = t.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (var part in parts)
-                        if (part.Contains('.') && System.Net.IPAddress.TryParse(part, out _))
+                        if (part.Contains(".") && System.Net.IPAddress.TryParse(part, out _))
                             if (!servers.Contains(part)) servers.Add(part);
                 }
             }
