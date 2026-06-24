@@ -331,7 +331,7 @@ namespace KighmuVpnWindows.Vpn
                 // 2. Chercher le DNS specifiquement sur cette interface
                 if (!string.IsNullOrWhiteSpace(activeInterface))
                 {
-                    var psi = new ProcessStartInfo { FileName = "netsh", Arguments = $"interface ipv4 show dns "{activeInterface}"", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+                    var psi = new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns \"" + activeInterface + "\"", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
                     using var p = Process.Start(psi);
                     if (p != null)
                     {
