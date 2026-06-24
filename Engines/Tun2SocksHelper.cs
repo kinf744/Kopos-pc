@@ -27,7 +27,7 @@ namespace KighmuVpnWindows.Engines
         /// Demarre hev-socks5-tunnel vers le port SOCKS5 indique.
         /// Retourne le Process demarre ou null en cas d'erreur.
         /// </summary>
-        public static Process? Start(string tunAdapterName, int socksPort, string instanceId = "main", bool udpEnabled = true)
+        public static Process? Start(string tunAdapterName, int socksPort, string instanceId = "main", bool udpEnabled = true, int mtu = 8500)
         {
             try
             {
@@ -40,7 +40,7 @@ namespace KighmuVpnWindows.Engines
 
                 // Generer le fichier YAML
                 string configPath = GetConfigPath(instanceId);
-                string yaml = BuildYaml(tunAdapterName, socksPort, udpEnabled);
+                string yaml = BuildYaml(tunAdapterName, socksPort, udpEnabled, mtu);
                 File.WriteAllText(configPath, yaml);
                 KighmuLogger.Info(TAG, $"Config YAML ecrite: {configPath}");
 
@@ -128,11 +128,11 @@ namespace KighmuVpnWindows.Engines
             catch { }
         }
 
-        private static string BuildYaml(string tunAdapterName, int socksPort, bool udpEnabled = true)
+        private static string BuildYaml(string tunAdapterName, int socksPort, bool udpEnabled = true, int mtu = 8500)
         {
             return $@"tunnel:
   name: {tunAdapterName}
-  mtu: 8500
+  mtu: {mtu}
   ipv4: 198.18.0.1
   ipv6: 'fc00::1'
 
