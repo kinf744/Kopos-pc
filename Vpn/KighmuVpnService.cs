@@ -282,10 +282,10 @@ namespace KighmuVpnWindows.Vpn
         private static List<string> DetectSystemDnsServers()
         {
             var servers = new List<string>();
+            string activeInterface = "";
             try
             {
                 // 1. Trouver l'interface active (celle avec la route par defaut)
-                string activeInterface = "";
                 try
                 {
                     var rp = Process.Start(new ProcessStartInfo { FileName = "route", Arguments = "print -4 0.0.0.0", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true });
