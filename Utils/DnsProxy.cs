@@ -43,7 +43,7 @@ namespace KighmuVpnWindows.Utils
             {
                 try
                 {
-                    var result = await _server.ReceiveAsync(_cts.Token);
+                    var result = await _server.ReceiveAsync();
                     var query = result.Buffer;
                     var client = result.RemoteEndPoint;
                     if (query.Length < 12) continue;
@@ -68,24 +68,26 @@ namespace KighmuVpnWindows.Utils
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                using var upstream = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                upstream.Bind(new IPEndPoint(_bindAddress, 0));
-                upstream.Connect(_upstream);
-                upstream.SendTimeout = 5000;
-
-                await upstream.SendAsync(new ArraySegment<byte>(query), SocketFlags.None);
+                using var upstream = new UdpClient();
+                upstream.Client.Bind(new IPEndPoint(_bindAddress, 0));
+                await upstream.SendAsync(query, query.Length, _upstream);
                 SlowDnsLogger.Info("DnsProxy", $"UP   TX={txId} envoye a {_upstream}");
 
-                var buffer = new byte[4096];
-                var recv = await upstream.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
-                byte[] response = new byte[recv];
-                Array.Copy(buffer, 0, response, 0, recv);
-
-                if (_pending.TryRemove(txId, out var client))
+                var recvTask = upstream.ReceiveAsync();
+                if (await Task.WhenAny(recvTask, Task.Delay(5000)) == recvTask)
                 {
-                    await _server.SendAsync(response, response.Length, client);
-                    sw.Stop();
-                    SlowDnsLogger.Info("DnsProxy", $"RESP TX={txId} vers client={client} taille={recv} temps={sw.ElapsedMilliseconds}ms");
+                    var response = recvTask.Result;
+                    if (_pending.TryRemove(txId, out var client))
+                    {
+                        await _server.SendAsync(response.Buffer, response.Buffer.Length, client);
+                        sw.Stop();
+                        SlowDnsLogger.Info("DnsProxy", $"RESP TX={txId} vers client={client} taille={response.Buffer.Length} temps={sw.ElapsedMilliseconds}ms");
+                    }
+                }
+                else
+                {
+                    SlowDnsLogger.Warn("DnsProxy", $"FAIL TX={txId} timeout 5s upstream {_upstream}");
+                    _pending.TryRemove(txId, out _);
                 }
             }
             catch (Exception ex)
