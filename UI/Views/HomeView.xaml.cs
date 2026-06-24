@@ -17,6 +17,7 @@ namespace KighmuVpnWindows.UI.Views
             _vpnService.StatusChanged += OnStatusChanged;
             _vpnService.ErrorOccurred += OnError;
             _vpnService.ActiveModeChanged += OnActiveModeChanged;
+            _vpnService.TrafficUpdated += OnTrafficUpdated;
             PopulateProfileSelector();
             UpdateUI(_vpnService.Status);
             Unloaded += HomeView_Unloaded;
@@ -30,6 +31,7 @@ namespace KighmuVpnWindows.UI.Views
             _vpnService.StatusChanged -= OnStatusChanged;
             _vpnService.ErrorOccurred -= OnError;
             _vpnService.ActiveModeChanged -= OnActiveModeChanged;
+            _vpnService.TrafficUpdated -= OnTrafficUpdated;
             Unloaded -= HomeView_Unloaded;
         }
 
@@ -105,6 +107,25 @@ namespace KighmuVpnWindows.UI.Views
                 MessageBox.Show(message, "Erreur tunnel",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             });
+        }
+
+        // ── Trafic ──────────────────────────────────────────────────────────────
+
+        private void OnTrafficUpdated(long rxBytes, long txBytes)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                DownloadText.Text = FormatBytes(rxBytes);
+                UploadText.Text   = FormatBytes(txBytes);
+            });
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes < 1024)              return $"{bytes} B";
+            if (bytes < 1024 * 1024)       return $"{bytes / 1024} KB";
+            if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024 * 1024)} MB";
+            return $"{bytes / (1024 * 1024 * 1024)} GB";
         }
 
         // ── Mise a jour UI ────────────────────────────────────────────────────
