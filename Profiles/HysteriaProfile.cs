@@ -19,6 +19,7 @@ namespace KighmuVpnWindows.Profiles
         [JsonProperty("downloadMbps")] public int DownloadMbps { get; set; } = 100;
         [JsonProperty("obfsPassword")] public string ObfsPassword { get; set; } = "";
         [JsonProperty("portHopping")] public string PortHopping { get; set; } = "20000-50000";
+        [JsonProperty("protocol")] public string Protocol { get; set; } = "udp";
 
         [JsonProperty("isSelected")] public bool IsSelected { get; set; } = false;
 
