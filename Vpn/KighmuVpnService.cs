@@ -285,59 +285,40 @@ namespace KighmuVpnWindows.Vpn
             string activeInterface = "";
             try
             {
-                // 1. Trouver l'interface active (celle avec la route par defaut)
-                try
+                // 1. Lister les interfaces connectees (non-loopback) et trouver la meilleure
+                string bestInterface = "";
+                int bestMetric = int.MaxValue;
+                var np = Process.Start(new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show interfaces", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true });
+                if (np != null)
                 {
-                    var rp = Process.Start(new ProcessStartInfo { FileName = "route", Arguments = "print -4 0.0.0.0", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true });
-                    if (rp != null)
+                    string ni = np.StandardOutput.ReadToEnd();
+                    np.WaitForExit(2000);
+                    foreach (var nl in ni.Split(new[] { '\\n', '\\r' }, StringSplitOptions.RemoveEmptyEntries))
                     {
-                        string routOutput = rp.StandardOutput.ReadToEnd();
-                        rp.WaitForExit(3000);
-                        foreach (var rl in routOutput.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
-                        {
-                            var rt = rl.Trim();
-                            if (!rt.StartsWith("0.0.0.0")) continue;
-                            var rparts = rt.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                            if (rparts.Length >= 4)
-                            {
-                                // La derniere colonne est le nom de l'interface ou le idx
-                                activeInterface = rparts[rparts.Length - 1];
-                                // Si c'est un nombre, chercher le nom via netsh
-                                if (int.TryParse(activeInterface, out _))
-                                {
-                                    var np = Process.Start(new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show interfaces", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true });
-                                    if (np != null)
-                                    {
-                                        string ni = np.StandardOutput.ReadToEnd();
-                                        np.WaitForExit(2000);
-                                        foreach (var nl in ni.Split('\n'))
-                                        {
-                                            if (nl.Contains(activeInterface))
-                                            {
-                                                var np2 = nl.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                                                if (np2.Length >= 5) activeInterface = string.Join(" ", np2, 4, np2.Length - 4);
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                break;
-                            }
-                        }
+                        var trimmed = nl.Trim();
+                        if (!trimmed.Contains("connected")) continue;
+                        var parts = trimmed.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length < 5) continue;
+                        if (!int.TryParse(parts[1], out int metric)) continue;
+                        if (metric >= bestMetric) continue;
+                        string ifaceName = string.Join(" ", parts, 4, parts.Length - 4);
+                        if (ifaceName.Contains("Loopback") || ifaceName.Contains("loopback")) continue;
+                        bestMetric = metric;
+                        bestInterface = ifaceName;
                     }
                 }
-                catch { }
 
-                // 2. Chercher le DNS specifiquement sur cette interface
-                if (!string.IsNullOrWhiteSpace(activeInterface))
+                // 2. Chercher le DNS sur la meilleure interface connectee
+                if (!string.IsNullOrWhiteSpace(bestInterface))
                 {
-                    var psi = new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns \"" + activeInterface + "\"", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+                    activeInterface = bestInterface;
+                    var psi = new ProcessStartInfo { FileName = "netsh", Arguments = "interface ipv4 show dns \"" + bestInterface + "\"", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
                     using var p = Process.Start(psi);
                     if (p != null)
                     {
                         string output = p.StandardOutput.ReadToEnd();
                         p.WaitForExit(3000);
-                        foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                        foreach (var line in output.Split(new[] { '\\n', '\\r' }, StringSplitOptions.RemoveEmptyEntries))
                         {
                             var t = line.Trim();
                             if (!t.Contains("DNS") && !t.Contains("dns")) continue;
@@ -358,7 +339,7 @@ namespace KighmuVpnWindows.Vpn
                     {
                         string output = p.StandardOutput.ReadToEnd();
                         p.WaitForExit(3000);
-                        foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                        foreach (var line in output.Split(new[] { '\\n', '\\r' }, StringSplitOptions.RemoveEmptyEntries))
                         {
                             var t = line.Trim();
                             if (!t.Contains("DNS") && !t.Contains("dns")) continue;
