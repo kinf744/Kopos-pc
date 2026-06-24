@@ -251,16 +251,12 @@ namespace KighmuVpnWindows.Engines
         {
             string net     = transport.ToLower();
             string tlsPart = BuildTlsPart();
-            string security = tlsPart.Contains("reality") ? "reality"
-                            : tlsPart.Contains("tls")     ? "tls"
-                            : "none";
 
             string p       = string.IsNullOrWhiteSpace(_profile.WsPath) ? "/" : _profile.WsPath;
             string h       = string.IsNullOrWhiteSpace(_profile.WsHost) ? _profile.ServerAddress : _profile.WsHost;
             string grpcSvc = string.IsNullOrWhiteSpace(_profile.GrpcServiceName)
                            ? (string.IsNullOrWhiteSpace(_profile.WsPath) ? "/" : _profile.WsPath)
                            : _profile.GrpcServiceName;
-            string kcpHdr  = string.IsNullOrWhiteSpace(_profile.KcpHeader) ? "none" : _profile.KcpHeader;
 
             string networkPart = net switch
             {
@@ -273,9 +269,12 @@ namespace KighmuVpnWindows.Engines
                 _                         => "{\"network\":\"tcp\",\"tcpSettings\":{}}"
             };
 
+            // BuildTlsPart() retourne deja "security":"tls","tlsSettings":{...} ou "security":"reality",...
+            // networkPart a ses propres accolades {}. On combine sans ajouter d'accolades supplementaires.
+            // Si tlsPart est vide, on ajoute "security":"none".
             return !string.IsNullOrWhiteSpace(tlsPart)
-                ? $"{{{networkPart},\"security\":\"{security}\",{tlsPart}}}"
-                : $"{{{networkPart},\"security\":\"none\"}}";
+                ? $"{networkPart},{tlsPart}"
+                : $"{networkPart},\"security\":\"none\"";
         }
 
         private string BuildXrayConfigFromProfile(int socksPort)
