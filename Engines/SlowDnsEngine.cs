@@ -114,6 +114,7 @@ namespace KighmuVpnWindows.Engines
         {
             SlowDnsLogger.Begin(TAG, "START tunnel SlowDNS");
             SlowDnsLogger.Info(TAG, $"Profile: ssh={_sshUser}@{_dns.SshHost}:{_dns.SshPort} dns={_dns.DnsServer}:{_dns.DnsPort} ns={_dns.Nameserver}");
+            SlowDnsLogger.Info(TAG, $"Profile index={_profileIndex} SocksPort={SocksPort} DnsttPort={DnsttPort}");
             SlowDnsLogger.Info(TAG, $"PublicKey: {CleanPublicKey?.Substring(0, Math.Min(32, CleanPublicKey?.Length ?? 0))}...");
             SlowDnsLogger.Info(TAG, $"SocksPort: {SocksPort}, DnsttPort: {DnsttPort}");
 
@@ -617,7 +618,7 @@ namespace KighmuVpnWindows.Engines
         public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
             SlowDnsLogger.Begin(TAG, "tun2socks");
-            SlowDnsLogger.Info(TAG, $"tun2socks: adapter={tunAdapterName} port={targetPort} udp=disabled mtu=1200");
+            SlowDnsLogger.Info(TAG, $"tun2socks: adapter={tunAdapterName} port={targetPort} udp=disabled mtu=1200 profileIndex={_profileIndex}");
             // SlowDNS: UDP desactive (SSH ne supporte pas UDP), MTU reduit (tunnel DNS lent)
             _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: false, mtu: 1200);
             if (_tun2socksProcess == null)
@@ -646,6 +647,7 @@ namespace KighmuVpnWindows.Engines
         public async Task Stop()
         {
             SlowDnsLogger.Begin(TAG, "STOP");
+            SlowDnsLogger.Info(TAG, $"Stop profileIndex={_profileIndex}");
             _running = false;
             _sshAlive = false;
             try { _cts?.Cancel(); } catch { }
