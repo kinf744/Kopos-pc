@@ -85,6 +85,22 @@ namespace KighmuVpnWindows.Vpn
                 // Attendre que hev-socks5-tunnel ait cree l'adaptateur Wintun (max 5s)
                 await Task.Delay(1500);
                 bool routesOk = RouteManager.ApplyRoutes(TUN_ADAPTER, serverIp: serverIp, dnsServer: "8.8.8.8");
+                if (routesOk && _engine is Engines.SlowDnsEngine slowDns && slowDns.HasDnsProxy)
+                {
+                    int? idx = RouteManager.GetAdapterIndex(TUN_ADAPTER);
+                    if (idx.HasValue)
+                    {
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = "netsh",
+                            Arguments = $"interface ip set dns name={idx.Value} static 127.0.0.1",
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+                        Process.Start(psi);
+                        KighmuLogger.Info(TAG, "DNS TUN pointe vers 127.0.0.1 (DnsProxy)");
+                    }
+                }
                 if (!routesOk)
                     throw new Exception("Impossible de configurer le routage systeme (verifiez les droits administrateur).");
 
