@@ -84,6 +84,7 @@ namespace KighmuVpnWindows.Engines
 
             string portHopping = string.IsNullOrWhiteSpace(_config.PortHopping) ? "20000-50000" : _config.PortHopping;
             string server = $"{ip}:{portHopping}";
+                string protocol = "udp";
             KighmuLogger.Info(TAG, $"Demarrage Hysteria: {server}");
             SlowDnsLogger.Info("HysteriaEngine", "Serveur cible: " + server + " socksPort=" + _socksPort + " auth=" + (_config.AuthPassword ?? "(none)") + " obfs=" + (_config.ObfsPassword ?? "(none)") + " up=" + _config.UploadMbps + " down=" + _config.DownloadMbps);
 
@@ -92,7 +93,7 @@ namespace KighmuVpnWindows.Engines
             if (!File.Exists(binary))
                 throw new Exception("hysteria.exe introuvable dans bin/win");
             SlowDnsLogger.Info("HysteriaEngine", "Binaire: " + binary);
-            try { var vi = Process.Start(new ProcessStartInfo { FileName = binary, Arguments = "version", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (vi != null) { string vout = vi.StandardOutput.ReadToEnd(); vi.WaitForExit(2000); SlowDnsLogger.Block("HysteriaEngine", "Version hysteria", vout); } } catch (Exception exv) { SlowDnsLogger.Warn("HysteriaEngine", "Version check: " + exv.Message); }
+            try { var vi = Process.Start(new ProcessStartInfo { FileName = binary, Arguments = "--version", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (vi != null) { string vout = vi.StandardOutput.ReadToEnd(); vi.WaitForExit(2000); SlowDnsLogger.Block("HysteriaEngine", "Version hysteria", vout); } } catch (Exception exv) { SlowDnsLogger.Warn("HysteriaEngine", "Version check: " + exv.Message); }
 
             try { _hysteriaProcess?.Kill(); } catch { /* ignore */ }
             _hysteriaProcess = null;
@@ -141,6 +142,7 @@ namespace KighmuVpnWindows.Engines
             var configObj = new
             {
                 server,
+                    protocol,
                 obfs = _config.ObfsPassword,
                 auth_str = _config.AuthPassword,
                 up_mbps = _config.UploadMbps,
