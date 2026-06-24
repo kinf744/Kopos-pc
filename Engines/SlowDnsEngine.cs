@@ -523,7 +523,8 @@ namespace KighmuVpnWindows.Engines
 
         public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
-            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: true);
+            // SlowDNS: UDP desactive (SSH ne supporte pas UDP), MTU reduit (tunnel DNS lent)
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: false, mtu: 1200);
         }
 
         public void StopDnsttOnly()
