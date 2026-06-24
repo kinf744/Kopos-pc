@@ -91,8 +91,8 @@ namespace KighmuVpnWindows.Engines
             string binary = GetBinaryPath("hysteria.exe");
             if (!File.Exists(binary))
                 throw new Exception("hysteria.exe introuvable dans bin/win");
-            SlowDnsLogger.Info("HysteriaEngine", "Binaire: " + binary + "
-try { var vi = Process.Start(new ProcessStartInfo { FileName = binary, Arguments = "version", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (vi != null) { string vout = vi.StandardOutput.ReadToEnd(); vi.WaitForExit(2000); SlowDnsLogger.Block("HysteriaEngine", "Version hysteria", vout); } } catch (Exception exv) { SlowDnsLogger.Warn("HysteriaEngine", "Version check: " + exv.Message); }
+            SlowDnsLogger.Info("HysteriaEngine", "Binaire: " + binary);
+            try { var vi = Process.Start(new ProcessStartInfo { FileName = binary, Arguments = "version", UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); if (vi != null) { string vout = vi.StandardOutput.ReadToEnd(); vi.WaitForExit(2000); SlowDnsLogger.Block("HysteriaEngine", "Version hysteria", vout); } } catch (Exception exv) { SlowDnsLogger.Warn("HysteriaEngine", "Version check: " + exv.Message); }
 
             try { _hysteriaProcess?.Kill(); } catch { /* ignore */ }
             _hysteriaProcess = null;
