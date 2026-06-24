@@ -140,7 +140,7 @@ namespace KighmuVpnWindows.Engines
 socks5:
   port: {socksPort}
   address: 127.0.0.1
-  udp: '{(udpEnabled ? "udp" : "disabled")}'
+  udp: {(udpEnabled ? "true" : "false")}
 
 misc:
   log-level: warn
