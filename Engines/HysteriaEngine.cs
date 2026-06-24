@@ -84,7 +84,6 @@ namespace KighmuVpnWindows.Engines
 
             string portHopping = string.IsNullOrWhiteSpace(_config.PortHopping) ? "20000-50000" : _config.PortHopping;
             string server = $"{ip}:{portHopping}";
-                string protocol = "udp";
             KighmuLogger.Info(TAG, $"Demarrage Hysteria: {server}");
             SlowDnsLogger.Info("HysteriaEngine", "Serveur cible: " + server + " socksPort=" + _socksPort + " auth=" + (_config.AuthPassword ?? "(none)") + " obfs=" + (_config.ObfsPassword ?? "(none)") + " up=" + _config.UploadMbps + " down=" + _config.DownloadMbps);
 
@@ -142,7 +141,7 @@ namespace KighmuVpnWindows.Engines
             var configObj = new
             {
                 server,
-                    protocol,
+                    protocol = "udp",
                 obfs = _config.ObfsPassword,
                 auth_str = _config.AuthPassword,
                 up_mbps = _config.UploadMbps,
