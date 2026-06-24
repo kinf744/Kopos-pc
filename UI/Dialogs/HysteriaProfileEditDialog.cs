@@ -86,6 +86,23 @@ namespace KighmuVpnWindows.UI.Dialogs
             Label("PORT HOPPING");
             var etHop  = Field("Plage de ports (ex: 20000-50000)", p.PortHopping);
 
+            Label("PROTOCOLE DE TRANSPORT");
+            var cbProtocol = new ComboBox
+            {
+                Foreground = textBrush,
+                Background = fieldBg,
+                Padding = new Thickness(8),
+                BorderThickness = new Thickness(0),
+                Margin = new Thickness(0, 4, 0, 8)
+            };
+            cbProtocol.Items.Add("udp (QUIC, par defaut)");
+            cbProtocol.Items.Add("faketcp (trafic masque en TCP)");
+            cbProtocol.Items.Add("wechat-video (trafic masque en appel video)");
+            if (p.Protocol == "faketcp") cbProtocol.SelectedIndex = 1;
+            else if (p.Protocol == "wechat-video") cbProtocol.SelectedIndex = 2;
+            else cbProtocol.SelectedIndex = 0;
+            layout.Children.Add(cbProtocol);
+
             // Boutons
             var buttonsPanel = new StackPanel
             {
@@ -123,6 +140,7 @@ namespace KighmuVpnWindows.UI.Dialogs
                     UploadMbps    = int.TryParse(etUp.Text,   out var up)   ? up   : 100,
                     DownloadMbps  = int.TryParse(etDown.Text, out var down) ? down : 100,
                     PortHopping   = string.IsNullOrWhiteSpace(etHop.Text) ? "20000-50000" : etHop.Text,
+                    Protocol      = cbProtocol.SelectedIndex == 1 ? "faketcp" : cbProtocol.SelectedIndex == 2 ? "wechat-video" : "udp",
                     IsSelected    = p.IsSelected
                 };
                 onSave(updated);
