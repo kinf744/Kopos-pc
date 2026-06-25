@@ -86,9 +86,7 @@ namespace KighmuVpnWindows.Engines
             }
             _resolvedServerIp = ip;
 
-            string portHopping = string.IsNullOrWhiteSpace(_config.PortHopping)
-                ? _config.ServerPort.ToString()
-                : _config.PortHopping;
+            string portHopping = string.IsNullOrWhiteSpace(_config.PortHopping) ? "20000-50000" : _config.PortHopping;
             string server = $"{ip}:{portHopping}";
             KighmuLogger.Info(TAG, $"Demarrage Hysteria: {server}");
             SlowDnsLogger.Info("HysteriaEngine", "Serveur cible: " + server + " socksPort=" + _socksPort + " auth=" + (_config.AuthPassword ?? "(none)") + " obfs=" + (_config.ObfsPassword ?? "(none)") + " up=" + _config.UploadMbps + " down=" + _config.DownloadMbps);
