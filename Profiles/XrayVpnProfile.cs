@@ -37,7 +37,7 @@ namespace KighmuVpnWindows.Profiles
         [JsonProperty("tls")]           public bool   Tls           { get; set; } = true;
         [JsonProperty("sni")]           public string Sni           { get; set; } = "";
         [JsonProperty("fingerprint")]   public string Fingerprint   { get; set; } = "chrome";
-        [JsonProperty("allowInsecure")] public bool   AllowInsecure { get; set; } = false;
+        [JsonProperty("allowInsecure")] public bool   AllowInsecure { get; set; } = true;
 
         // Reality specifique
         [JsonProperty("publicKey")] public string PublicKey { get; set; } = "";
@@ -114,7 +114,10 @@ namespace KighmuVpnWindows.Profiles
                     p.WsHost        = wsHost;
                     p.Tls           = tls == "tls";
                     p.Sni           = sni;
-                    p.XrayLinkJson  = BuildVmessJson(obj, transport, security, sni, path, wsHost);
+                    p.AllowInsecure = obj["allowInsecure"] != null
+                        ? (obj["allowInsecure"].ToString() == "1" || obj["allowInsecure"].ToString() == "true")
+                        : true;
+                    p.XrayLinkJson  = BuildVmessJson(obj, transport, security, sni, path, wsHost, p.AllowInsecure);
                 }
                 else if (link.StartsWith("vless://") || link.StartsWith("trojan://"))
                 {
@@ -151,18 +154,21 @@ namespace KighmuVpnWindows.Profiles
                     p.Flow          = flow;
                     p.AllowInsecure = parms.ContainsKey("allowInsecure") && parms["allowInsecure"] == "1";
                     p.XrayLinkJson  = BuildVlessOrTrojanJson(proto, p.Uuid, p.ServerAddress, p.ServerPort,
-                                        transport, security, sni, path, wsHost, fp, pbk, sid, flow);
+                                        transport, security, sni, path, wsHost, fp, pbk, sid, flow, p.AllowInsecure);
                 }
             }
             catch { }
         }
 
         private static string StreamSettings(string transport, string security, string sni,
-            string path, string host, string fp = "chrome", string pbk = "", string sid = "")
+            string path, string host, string fp = "chrome", string pbk = "", string sid = "", bool allowInsecure = true)
         {
             string tlsPart;
             if (security == "tls")
-                tlsPart = $",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"fingerprint\":\"{fp}\"}}";
+            {
+                string ai = allowInsecure ? "true" : "false";
+                tlsPart = $",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"fingerprint\":\"{fp}\",\"allowInsecure\":{ai}}}";
+            }
             else if (security == "reality")
                 tlsPart = $",\"realitySettings\":{{\"serverName\":\"{sni}\",\"fingerprint\":\"{fp}\",\"publicKey\":\"{pbk}\",\"shortId\":\"{sid}\"}}";
             else
@@ -191,13 +197,13 @@ namespace KighmuVpnWindows.Profiles
         }
 
         private static string BuildVmessJson(Newtonsoft.Json.Linq.JObject obj,
-            string transport, string security, string sni, string path, string wsHost)
+            string transport, string security, string sni, string path, string wsHost, bool allowInsecure = true)
         {
             string host    = obj["add"]?.ToString() ?? "";
             int    port    = obj["port"] != null ? int.Parse(obj["port"].ToString()) : 443;
             string uuid    = obj["id"]?.ToString()  ?? "";
             int    alterId = obj["aid"] != null ? int.Parse(obj["aid"].ToString()) : 0;
-            string stream  = StreamSettings(transport, security, sni, path, wsHost);
+            string stream  = StreamSettings(transport, security, sni, path, wsHost, allowInsecure: allowInsecure);
             return string.Concat(
                 "{\"log\":{\"loglevel\":\"warning\"},",
                 "\"inbounds\":[{\"port\":10808,\"protocol\":\"socks\",\"settings\":{\"udp\":true}}],",
@@ -211,9 +217,9 @@ namespace KighmuVpnWindows.Profiles
 
         private static string BuildVlessOrTrojanJson(string proto, string uuid, string host, int port,
             string transport, string security, string sni, string path, string wsHost,
-            string fp, string pbk, string sid, string flow)
+            string fp, string pbk, string sid, string flow, bool allowInsecure = true)
         {
-            string stream   = StreamSettings(transport, security, sni, path, wsHost, fp, pbk, sid);
+            string stream   = StreamSettings(transport, security, sni, path, wsHost, fp, pbk, sid, allowInsecure);
             string flowPart = !string.IsNullOrEmpty(flow) ? string.Concat(",\"flow\":\"", flow, "\"") : "";
             string outbound;
             if (proto == "trojan")

@@ -24,7 +24,7 @@ namespace KighmuVpnWindows.Profiles
         [JsonProperty("wsHost")]         public string WsHost         { get; set; } = "";
         [JsonProperty("tls")]            public bool   Tls            { get; set; } = true;
         [JsonProperty("sni")]            public string Sni            { get; set; } = "";
-        [JsonProperty("allowInsecure")]  public bool   AllowInsecure  { get; set; } = false;
+        [JsonProperty("allowInsecure")]  public bool   AllowInsecure  { get; set; } = true;
 
         // SlowDNS config
         [JsonProperty("dnsServer")]  public string DnsServer  { get; set; } = "8.8.8.8";
