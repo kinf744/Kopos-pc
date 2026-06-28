@@ -186,18 +186,29 @@ namespace KighmuVpnWindows.Engines
 
                 obj["inbounds"] = cleaned;
 
-                // Normaliser outbounds (conserver allowInsecure pour SNI non-matchant)
+                // Normaliser outbounds
                 var outbounds = obj["outbounds"] as JArray;
                 if (outbounds != null)
                 {
                     foreach (var ob in outbounds)
                     {
-                        var ss  = ob["streamSettings"] as JObject;
-                        var tls = ss?["tlsSettings"] as JObject;
-                        if (tls != null)
+                        // Remplacer le nom de domaine par l'IP résolue dans les adresses
+                        // (évite les échecs DNS quand le tunnel change les DNS système)
+                        var settings = ob["settings"] as JObject;
+                        if (settings != null && _resolvedServerIp != null && _resolvedServerIp != _profile.ServerAddress)
                         {
-                            ss!["tlsSettings"] = tls;
-                            ob["streamSettings"] = ss;
+                            var vnext = settings["vnext"] as JArray;
+                            if (vnext != null)
+                            {
+                                foreach (var v in vnext)
+                                    v["address"] = _resolvedServerIp;
+                            }
+                            var servers = settings["servers"] as JArray;
+                            if (servers != null)
+                            {
+                                foreach (var s in servers)
+                                    s["address"] = _resolvedServerIp;
+                            }
                         }
                     }
                     obj["outbounds"] = outbounds;
@@ -277,7 +288,7 @@ namespace KighmuVpnWindows.Engines
         {
             string proto  = _profile.Protocol;
             string uuid   = _profile.Uuid;
-            string host   = _profile.ServerAddress;
+            string host   = _resolvedServerIp ?? _profile.ServerAddress;
             int    port   = _profile.ServerPort;
             string stream = BuildStreamSettings(_profile.Transport);
 
