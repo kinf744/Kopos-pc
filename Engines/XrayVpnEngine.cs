@@ -307,6 +307,8 @@ namespace KighmuVpnWindows.Engines
 
         private void StartXrayProcess(string binary, string configPath)
         {
+            KighmuLogger.Info(TAG, $"Demarrage xray: {binary} run -c \"{configPath}\"");
+
             var psi = new ProcessStartInfo
             {
                 FileName               = binary,
@@ -318,6 +320,16 @@ namespace KighmuVpnWindows.Engines
             };
 
             _xrayProcess = new Process { StartInfo = psi };
+            _xrayProcess.EnableRaisingEvents = true;
+            _xrayProcess.Exited += (s, e) =>
+            {
+                try
+                {
+                    if (_xrayProcess != null && _xrayProcess.HasExited)
+                        KighmuLogger.Error(TAG, $"xray.exe exit code: {_xrayProcess.ExitCode}");
+                }
+                catch { }
+            };
 
             _xrayProcess.OutputDataReceived += (s, e) => ProcessXrayLine(e.Data);
             _xrayProcess.ErrorDataReceived  += (s, e) => ProcessXrayLine(e.Data);
@@ -330,17 +342,8 @@ namespace KighmuVpnWindows.Engines
         {
             if (string.IsNullOrWhiteSpace(line) || line.Length > 500) return;
             SlowDnsLogger.Raw("XrayVpnEngine", line);
+            KighmuLogger.Info(TAG, $"xray: {line.Substring(0, Math.Min(200, line.Length))}");
             string lower = line.ToLower();
-            if (lower.Contains("started") && lower.Contains("xray"))
-                KighmuLogger.Info(TAG, "Xray VPN demarre");
-            else if (lower.Contains("failed to dial"))
-                KighmuLogger.Warning(TAG, $"Xray dial: {line.Substring(0, Math.Min(150, line.Length))}");
-            else if ((lower.Contains("error") || lower.Contains("fatal"))
-                  && !lower.Contains("warning") && !lower.Contains("deprecated")
-                  && !lower.Contains("connection reset") && !lower.Contains("broken pipe")
-                  && !lower.Contains("eof") && !lower.Contains("use of closed")
-                  && !lower.Contains("successfully dialed") && !lower.Contains("404"))
-                KighmuLogger.Error(TAG, $"Xray: {line.Substring(0, Math.Min(150, line.Length))}");
         }
 
         public void StartTun2Socks(string tunAdapterName) =>
