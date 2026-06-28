@@ -152,7 +152,9 @@ namespace KighmuVpnWindows.Profiles
                     p.PublicKey     = pbk;
                     p.ShortId       = sid;
                     p.Flow          = flow;
-                    p.AllowInsecure = parms.ContainsKey("allowInsecure") && parms["allowInsecure"] == "1";
+                    p.AllowInsecure = !parms.ContainsKey("allowInsecure")
+                        ? true
+                        : parms["allowInsecure"] == "1" || parms["allowInsecure"] == "true";
                     p.XrayLinkJson  = BuildVlessOrTrojanJson(proto, p.Uuid, p.ServerAddress, p.ServerPort,
                                         transport, security, sni, path, wsHost, fp, pbk, sid, flow, p.AllowInsecure);
                 }

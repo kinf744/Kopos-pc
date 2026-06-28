@@ -192,24 +192,27 @@ namespace KighmuVpnWindows.Engines
                 {
                     foreach (var ob in outbounds)
                     {
-                        // Remplacer le nom de domaine par l'IP résolue dans les adresses
-                        // (évite les échecs DNS quand le tunnel change les DNS système)
                         var settings = ob["settings"] as JObject;
-                        if (settings != null && _resolvedServerIp != null && _resolvedServerIp != _profile.ServerAddress)
+                        if (settings != null)
                         {
-                            var vnext = settings["vnext"] as JArray;
-                            if (vnext != null)
+                            // Remplacer le nom de domaine par l'IP résolue
+                            if (_resolvedServerIp != null && _resolvedServerIp != _profile.ServerAddress)
                             {
-                                foreach (var v in vnext)
-                                    v["address"] = _resolvedServerIp;
-                            }
-                            var servers = settings["servers"] as JArray;
-                            if (servers != null)
-                            {
-                                foreach (var s in servers)
-                                    s["address"] = _resolvedServerIp;
+                                var vnext = settings["vnext"] as JArray;
+                                if (vnext != null)
+                                    foreach (var v in vnext)
+                                        v["address"] = _resolvedServerIp;
+                                var servers = settings["servers"] as JArray;
+                                if (servers != null)
+                                    foreach (var s in servers)
+                                        s["address"] = _resolvedServerIp;
                             }
                         }
+                        // Forcer allowInsecure:true dans tlsSettings (certificats auto-signés, CDN, etc.)
+                        var ss = ob["streamSettings"] as JObject;
+                        var tls = ss?["tlsSettings"] as JObject;
+                        if (tls != null)
+                            tls["allowInsecure"] = true;
                     }
                     obj["outbounds"] = outbounds;
                 }
