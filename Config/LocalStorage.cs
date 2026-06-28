@@ -1,3 +1,4 @@
+using KighmuVpnWindows.Utils;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -16,10 +17,8 @@ namespace KighmuVpnWindows.Config
 
         public LocalStorage(string prefsName)
         {
-            string baseDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "KighmuVPN", "Prefs"
-            );
+            AppPaths.EnsureDirectories();
+            string baseDir = AppPaths.PrefsPath;
             Directory.CreateDirectory(baseDir);
             _filePath = Path.Combine(baseDir, $"{prefsName}.json");
             _data = Load();
@@ -47,11 +46,8 @@ namespace KighmuVpnWindows.Config
 
         public static string GetAppDataDir()
         {
-            string dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "KighmuVPN", "Data");
-            Directory.CreateDirectory(dir);
-            return dir;
+            AppPaths.EnsureDirectories();
+            return AppPaths.DataPath;
         }
 
         public string GetString(string key, string defaultValue) =>

@@ -69,8 +69,7 @@ namespace KighmuVpnWindows.Engines
             _externalDnsttPort = externalDnsttPort;
         }
 
-        private static string GetBinaryPath(string name) =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", name);
+        private static string GetBinaryPath(string name) => AppPaths.Bin(name);
 
         private static bool IsPortFree(int port)
         {
@@ -176,7 +175,7 @@ namespace KighmuVpnWindows.Engines
             string configPath = WriteXrayConfig();
             string binary     = GetBinaryPath("xray.exe");
             if (!File.Exists(binary))
-                throw new Exception("xray.exe introuvable dans bin/win");
+                throw new Exception("xray.exe introuvable: " + binary);
 
             StartXrayProcess(binary, configPath);
 
@@ -206,7 +205,7 @@ namespace KighmuVpnWindows.Engines
         {
             string bin = GetBinaryPath("dnstt-client.exe");
             if (!File.Exists(bin))
-                throw new Exception("dnstt-client.exe introuvable dans bin/win");
+                throw new Exception("dnstt-client.exe introuvable: " + bin);
 
             string args = $"-udp {_profile.DnsServer}:{_profile.DnsPort} -pubkey {CleanPublicKey} {_profile.Nameserver} 127.0.0.1:{DnsttPort}";
 
@@ -339,7 +338,7 @@ namespace KighmuVpnWindows.Engines
                 ? "xraydns_config.json"
                 : $"xraydns_config_{_instanceId}.json";
 
-            string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config");
+            string dir = AppPaths.ConfigPath;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, fileName);
             File.WriteAllText(path, jsonConfig);
@@ -496,7 +495,7 @@ namespace KighmuVpnWindows.Engines
         {
             try
             {
-                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config");
+                string dir = AppPaths.ConfigPath;
                 string fileName = _instanceId == 0
                     ? "xraydns_config.json"
                     : $"xraydns_config_{_instanceId}.json";

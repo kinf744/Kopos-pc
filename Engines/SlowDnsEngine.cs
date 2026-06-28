@@ -139,7 +139,7 @@ namespace KighmuVpnWindows.Engines
             if (_dnsttProcess == null || _dnsttProcess.HasExited)
             {
                 string dnsttBin = GetBinaryPath("dnstt-client.exe");
-                if (!File.Exists(dnsttBin)) throw new Exception("dnstt-client.exe introuvable dans bin/win");
+                if (!File.Exists(dnsttBin)) throw new Exception("dnstt-client.exe introuvable: " + dnsttBin);
                 StartDnsttProcess(dnsttBin);
 
                 int waited = 0;
@@ -215,7 +215,7 @@ namespace KighmuVpnWindows.Engines
             if (string.IsNullOrWhiteSpace(CleanPublicKey)) throw new Exception("Public Key manquante");
 
             string dnsttBin = GetBinaryPath("dnstt-client.exe");
-            if (!File.Exists(dnsttBin)) throw new Exception("dnstt-client.exe introuvable dans bin/win");
+            if (!File.Exists(dnsttBin)) throw new Exception("dnstt-client.exe introuvable: " + dnsttBin);
             StartDnsttProcess(dnsttBin);
 
             bool ready = false;
@@ -249,8 +249,7 @@ namespace KighmuVpnWindows.Engines
             return DnsttPort;
         }
 
-        private static string GetBinaryPath(string name) =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", name);
+        private static string GetBinaryPath(string name) => AppPaths.Bin(name);
 
         private void StartDnsttProcess(string bin)
         {
@@ -396,7 +395,7 @@ namespace KighmuVpnWindows.Engines
 
             string plinkBin = GetBinaryPath("plink.exe");
             if (!File.Exists(plinkBin))
-                throw new Exception("plink.exe introuvable dans bin/win");
+                throw new Exception("plink.exe introuvable: " + plinkBin);
 
             int port = SocksPort;
 

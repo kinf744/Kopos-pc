@@ -26,7 +26,7 @@ jobs:
       - name: Restore NuGet packages
         run: dotnet restore KighmuVpnWindows.csproj
 
-      - name: Download native binaries (bin/win/)
+      - name: Download native binaries (bin/win/) — intégrés dans l'exe unique
         shell: bash
         run: |
           mkdir -p bin/win
@@ -66,16 +66,16 @@ jobs:
           mv hev_tmp/hev-socks5-tunnel/msys-2.0.dll          bin/win/msys-2.0.dll
           rm -rf hev_win64.zip hev_tmp/
 
-          echo "=== Contenu bin/win/ ==="
+          echo "=== Contenu bin/win/ (sera embarqué dans l'exe) ==="
           ls -lh bin/win/
 
-      - name: Build (Release)
+      - name: Build (Release) — exe unique avec ressources embarquées
         run: dotnet publish KighmuVpnWindows.csproj -c Release -o publish/
 
-      - name: Creer ZIP de distribution
+      - name: Creer ZIP de distribution (exe unique + DLLs .NET)
         shell: pwsh
         run: |
-          echo "=== Contenu publish/ ==="
+          echo "=== Contenu publish/ (exe unique + DLLs .NET) ==="
           Get-ChildItem publish/ | Select-Object Name, Length | Sort-Object Length -Descending
           Compress-Archive -Path publish\* -DestinationPath KighmuVPN-Windows.zip -Force
           $zip = Get-Item KighmuVPN-Windows.zip
@@ -97,7 +97,9 @@ jobs:
           files: |
             KighmuVPN-Windows.zip
           body: |
-            Build automatique depuis le commit ${{ github.sha }}
+            Build automatique — exe unique avec ressources embarquées
+            Tous les binaires (xray, dnstt, hysteria, plink, tun2socks, wintun) sont intégrés dans l'exe
+            Extraction automatique vers %LOCALAPPDATA%\KingOMVPN\bin\ au premier lancement
             Compatible: Windows 7 SP1 x64 et Windows 10/11
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

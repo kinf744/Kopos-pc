@@ -1,3 +1,4 @@
+using KighmuVpnWindows.Utils;
 using System;
 using System.IO;
 using System.Reflection;
@@ -20,6 +21,21 @@ namespace KighmuVpnWindows
             Log($"CLR: {Environment.Version}");
             Log($"Dir: {Environment.CurrentDirectory}");
             Log($"64bit: {Environment.Is64BitProcess}");
+
+            // Extraire les ressources embarquées (binaires, DLLs) vers %LOCALAPPDATA%\KingOMVPN\bin\
+            try
+            {
+                Log("Extraction des ressources...");
+                ResourceManager.EnsureResources();
+                Log("Ressources extraites avec succes.");
+            }
+            catch (Exception ex)
+            {
+                Log($"ERREUR extraction ressources: {ex.Message}");
+                MessageBox.Show($"Echec extraction ressources: {ex.Message}", "Erreur fatale",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                Environment.Exit(1);
+            }
 
             AppDomain.CurrentDomain.UnhandledException += (s, ex) =>
             {
@@ -62,17 +78,17 @@ namespace KighmuVpnWindows
                 Log($"  {dll}: {(File.Exists(path) ? "PRESENT" : "MANQUANT")}");
             }
 
-            // Verifier dossier bin/win
-            Log("=== Verification bin/win ===");
-            string binDir = Path.Combine(dir, "bin", "win");
+            // Verifier dossier bin/ dans AppData
+            Log("=== Verification bin/ ===");
+            string binDir = AppPaths.BinPath;
             if (Directory.Exists(binDir))
             {
                 foreach (var f in Directory.GetFiles(binDir))
-                    Log($"  bin/win/{Path.GetFileName(f)}");
+                    Log($"  bin/{Path.GetFileName(f)} ({new FileInfo(f).Length} octets)");
             }
             else
             {
-                Log("  DOSSIER bin/win MANQUANT !");
+                Log("  DOSSIER bin/ MANQUANT !");
             }
 
             try

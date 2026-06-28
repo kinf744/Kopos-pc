@@ -43,8 +43,7 @@ namespace KighmuVpnWindows.Engines
         private CancellationTokenSource? _cts;
         private Process? _tun2socksProcess;
 
-        private static string GetBinaryPath(string name) =>
-            System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", name);
+        private static string GetBinaryPath(string name) => AppPaths.Bin(name);
 
         public async Task<int> Start()
         {

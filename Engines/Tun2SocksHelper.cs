@@ -1,4 +1,3 @@
-using KighmuVpnWindows.Config;
 using KighmuVpnWindows.Utils;
 using System;
 using System.Collections.Generic;
@@ -18,11 +17,10 @@ namespace KighmuVpnWindows.Engines
         private const string TAG = "Tun2SocksHelper";
         private const string BINARY = "tun2socks.exe";
 
-        private static string GetBinaryPath() =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", BINARY);
+        private static string GetBinaryPath() => AppPaths.Bin(BINARY);
 
         private static string GetConfigPath(string instanceId) =>
-            Path.Combine(LocalStorage.GetAppDataDir(), $"hev_config_{instanceId}.yaml");
+            Path.Combine(AppPaths.ConfigPath, $"hev_config_{instanceId}.yaml");
 
         /// <summary>
         /// Demarre hev-socks5-tunnel vers le port SOCKS5 indique.

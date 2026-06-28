@@ -95,8 +95,7 @@ namespace KighmuVpnWindows.Engines
             return port;
         }
 
-        private static string GetBinaryPath(string name) =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", name);
+        private static string GetBinaryPath(string name) => AppPaths.Bin(name);
 
         public async Task<int> Start()
         {

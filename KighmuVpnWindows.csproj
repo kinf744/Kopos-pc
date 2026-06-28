@@ -22,9 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="bin\win\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="bin\win\**\*.*">
+      <LogicalName>KighmuVpnWindows.bin.win.%(Filename)%(Extension)</LogicalName>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

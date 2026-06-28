@@ -57,8 +57,7 @@ namespace KighmuVpnWindows.Engines
             _profileIndex = profileIndex;
         }
 
-        private static string GetBinaryPath(string name) =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", name);
+        private static string GetBinaryPath(string name) => AppPaths.Bin(name);
 
         private static bool IsPortFree(int port)
         {

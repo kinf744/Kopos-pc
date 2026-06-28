@@ -96,7 +96,7 @@ namespace KighmuVpnWindows.Engines
 
             // DIAG: Vérification du binaire
             if (!File.Exists(binary))
-                throw new Exception("hysteria.exe introuvable dans bin/win");
+                throw new Exception("hysteria.exe introuvable: " + binary);
             var binInfo = new System.IO.FileInfo(binary);
             if (binInfo.Length == 0)
                 throw new Exception("hysteria.exe corrompu (0 octets). Binaire invalide.");
@@ -163,10 +163,7 @@ namespace KighmuVpnWindows.Engines
 
         private string WriteConfig(string server)
         {
-            string dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "KighmuVPN", "Configs"
-            );
+            string dir = AppPaths.ConfigPath;
             Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, $"hysteria_config_{_profileIndex}.json");
 
@@ -191,8 +188,7 @@ namespace KighmuVpnWindows.Engines
             return path;
         }
 
-        private static string GetBinaryPath(string name) =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", name);
+        private static string GetBinaryPath(string name) => AppPaths.Bin(name);
 
         private void StartHysteriaProcess(string binary, string configFile)
         {

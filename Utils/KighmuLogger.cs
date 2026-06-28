@@ -7,10 +7,7 @@ namespace KighmuVpnWindows.Utils
     /// <summary>Équivalent de KighmuLogger.kt côté Android.</summary>
     public static class KighmuLogger
     {
-        private static readonly string LogDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "KighmuVPN", "Logs"
-        );
+        private static readonly string LogDir = AppPaths.LogsPath;
         private static readonly string LogFile = Path.Combine(LogDir, "kighmu.log");
         private static readonly object _lock = new object();
 

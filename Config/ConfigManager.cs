@@ -1,4 +1,5 @@
 using KighmuVpnWindows.Profiles;
+using KighmuVpnWindows.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -68,9 +69,7 @@ namespace KighmuVpnWindows.Config
             new SshSslProfileRepository().DeleteAll();
 
             // Supprimer les preferences
-            string prefsDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "KighmuVPN", "Prefs");
+            string prefsDir = AppPaths.PrefsPath;
 
             if (Directory.Exists(prefsDir))
             {

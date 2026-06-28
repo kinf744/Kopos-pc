@@ -49,8 +49,7 @@ namespace KighmuVpnWindows.Engines
             _instanceId = instanceId;
         }
 
-        private static string GetBinaryPath(string name) =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "win", name);
+        private static string GetBinaryPath(string name) => AppPaths.Bin(name);
 
         private static bool IsPortFree(int port)
         {
@@ -96,7 +95,7 @@ namespace KighmuVpnWindows.Engines
             string configPath = WriteXrayConfig();
             string binary     = GetBinaryPath("xray.exe");
             if (!File.Exists(binary))
-                throw new Exception("xray.exe introuvable dans bin/win");
+                throw new Exception("xray.exe introuvable: " + binary);
 
             StartXrayProcess(binary, configPath);
 
@@ -215,7 +214,7 @@ namespace KighmuVpnWindows.Engines
                 ? "xrayvpn_config.json"
                 : $"xrayvpn_config_{_instanceId}.json";
 
-            string dir  = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config");
+            string dir  = AppPaths.ConfigPath;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, fileName);
             File.WriteAllText(path, jsonConfig);

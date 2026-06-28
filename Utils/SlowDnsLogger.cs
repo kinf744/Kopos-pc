@@ -17,8 +17,8 @@ namespace KighmuVpnWindows.Utils
         {
             try
             {
-                string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-                LogPath = Path.Combine(desktop, "kighmu_slow.log");
+                AppPaths.EnsureDirectories();
+                LogPath = Path.Combine(AppPaths.LogsPath, "kighmu_slow.log");
                 File.WriteAllText(LogPath, $"=== KighmuVPN SlowDNS Debug Log ===\r\n" +
                     $"Demarrage: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\r\n" +
                     $"Machine: {Environment.MachineName}, User: {Environment.UserName}\r\n" +
