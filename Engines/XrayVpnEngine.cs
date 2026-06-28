@@ -133,7 +133,11 @@ namespace KighmuVpnWindows.Engines
             }
             else if (!ready && procExited)
             {
-                throw new Exception("xray.exe s'est arrete immediatement (verifiez le fichier config)");
+                int ec = _xrayProcess?.HasExited == true ? _xrayProcess.ExitCode : -1;
+                string err = _xrayProcess?.HasExited == true ? _xrayProcess.StandardError?.ReadToEnd()?.Trim() ?? "" : "";
+                if (!string.IsNullOrEmpty(err))
+                    KighmuLogger.Error(TAG, $"xray stderr: {err}");
+                throw new Exception($"xray.exe exit={ec} (verifiez le fichier config sur le Bureau: xrayvpn_debug_{_instanceId}.json)");
             }
 
             SlowDnsLogger.Info("XrayVpnEngine", "Xray VPN SOCKS5 ready port=" + SocksPort);
