@@ -69,17 +69,29 @@ jobs:
           echo "=== Contenu bin/win/ (sera embarqué dans l'exe) ==="
           ls -lh bin/win/
 
-      - name: Build (Release) — exe unique avec ressources embarquées
+      - name: Build (Release)
         run: dotnet publish KighmuVpnWindows.csproj -c Release -o publish/
 
-      - name: Creer ZIP de distribution (exe unique + DLLs .NET)
+      - name: Verifier contenu publish/ (doit contenir seulement KighmuVPN.exe)
         shell: pwsh
         run: |
-          echo "=== Contenu publish/ (exe unique + DLLs .NET) ==="
+          Write-Host "=== Contenu publish/ ==="
           Get-ChildItem publish/ | Select-Object Name, Length | Sort-Object Length -Descending
-          Compress-Archive -Path publish\* -DestinationPath KighmuVPN-Windows.zip -Force
+          $exeCount = (Get-ChildItem publish/ -Filter *.exe).Count
+          $totalCount = (Get-ChildItem publish/).Count
+          if ($totalCount -gt 1) {
+            Write-Host "WARNING: $totalCount fichiers dans publish/ (attendu: 1 exe)"
+            Get-ChildItem publish/ | Where-Object { $_.Extension -ne '.exe' } | ForEach-Object {
+              Write-Host "  Fichier supplementaire: $($_.Name) ($($_.Length) octets)"
+            }
+          }
+
+      - name: Creer ZIP de distribution (exe unique)
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish\KighmuVPN.exe -DestinationPath KighmuVPN-Windows.zip -Force
           $zip = Get-Item KighmuVPN-Windows.zip
-          Write-Host ("ZIP final: {0} Mo" -f [math]::Round($zip.Length/1MB, 2))
+          Write-Host ("ZIP final: {0} Mo - {1}" -f [math]::Round($zip.Length/1MB, 2), $zip.Name)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
