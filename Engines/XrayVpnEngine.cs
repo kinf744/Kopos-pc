@@ -232,6 +232,14 @@ namespace KighmuVpnWindows.Engines
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, fileName);
             File.WriteAllText(path, jsonConfig);
+            KighmuLogger.Info(TAG, $"Config ecrite: {path}");
+            // Copie de debug sur le Bureau pour inspection facile
+            try
+            {
+                string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                File.WriteAllText(Path.Combine(desktop, $"xrayvpn_debug_{_instanceId}.json"), jsonConfig);
+            }
+            catch { }
             SlowDnsLogger.Block("XrayVpnEngine", "Config JSON", jsonConfig);
             return path;
         }
