@@ -175,10 +175,7 @@ namespace KighmuVpnWindows.Engines
                         var tls = ss?["tlsSettings"] as JObject;
                         if (tls != null)
                         {
-                            // Ne pas supprimer allowInsecure : le laisser tel quel
-                            // ou forcer true si le profil l'autorise
-                            if (_profile.AllowInsecure)
-                                tls["allowInsecure"] = true;
+                            tls.Remove("allowInsecure");
                             ss!["tlsSettings"] = tls;
                             ob["streamSettings"] = ss;
                         }

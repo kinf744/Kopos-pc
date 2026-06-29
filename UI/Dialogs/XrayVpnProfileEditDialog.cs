@@ -113,10 +113,6 @@ namespace KighmuVpnWindows.UI.Dialogs
             modeRow.Children.Add(rbJson);
             layout.Children.Add(modeRow);
 
-            // ── Options TLS ───────────────────────────────────────────────────
-            Label("OPTIONS TLS");
-            var cbAllowInsecure = CheckField("Ignorer erreurs certificat TLS (allowInsecure)", p.AllowInsecure);
-
             // ── PANNEAU MODE LIEN ─────────────────────────────────────────────
             var panelLink = new StackPanel { Visibility = startInLinkMode ? Visibility.Visible : Visibility.Collapsed };
 
@@ -216,7 +212,7 @@ namespace KighmuVpnWindows.UI.Dialogs
                     Tls           = tmp.Tls,
                     Sni           = tmp.Sni,
                     Fingerprint   = string.IsNullOrWhiteSpace(tmp.Fingerprint) ? "chrome" : tmp.Fingerprint,
-                    AllowInsecure = cbAllowInsecure.IsChecked == true || tmp.AllowInsecure,
+                    AllowInsecure = tmp.AllowInsecure,
                     PublicKey     = tmp.PublicKey,
                     ShortId       = tmp.ShortId,
                     Flow          = tmp.Flow,
