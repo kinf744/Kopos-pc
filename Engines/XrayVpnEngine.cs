@@ -209,7 +209,8 @@ namespace KighmuVpnWindows.Engines
                         if (security == "tls")
                         {
                             var tls = ss["tlsSettings"] as JObject ?? new JObject();
-                            tls["allowInsecure"] = true;
+                            tls.Remove("allowInsecure");
+                            tls["pinnedPeerCertSha256"] = new JArray();
                             if (tls["serverName"] == null)
                                 tls["serverName"] = _profile.Sni ?? _profile.ServerAddress;
                             ss["tlsSettings"] = tls;
@@ -220,9 +221,9 @@ namespace KighmuVpnWindows.Engines
                             ss["security"] = "tls";
                             ss["tlsSettings"] = new JObject
                             {
-                                ["serverName"]    = _profile.Sni ?? _profile.ServerAddress,
-                                ["allowInsecure"] = true,
-                                ["fingerprint"]   = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint
+                                ["serverName"]          = _profile.Sni ?? _profile.ServerAddress,
+                                ["pinnedPeerCertSha256"] = new JArray(),
+                                ["fingerprint"]         = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint
                             };
                             ob["streamSettings"] = ss;
                         }
@@ -267,9 +268,8 @@ namespace KighmuVpnWindows.Engines
             {
                 // TLS standard
                 string sni      = string.IsNullOrWhiteSpace(_profile.Sni) ? _profile.ServerAddress : _profile.Sni;
-                string insecure = _profile.AllowInsecure ? "true" : "false";
                 string fp       = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint;
-                return $"\"security\":\"tls\",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"allowInsecure\":{insecure},\"fingerprint\":\"{fp}\"}}"; 
+                return $"\"security\":\"tls\",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"pinnedPeerCertSha256\":[],\"fingerprint\":\"{fp}\"}}"; 
             }
         }
 
