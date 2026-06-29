@@ -210,7 +210,8 @@ namespace KighmuVpnWindows.Engines
                         {
                             var tls = ss["tlsSettings"] as JObject ?? new JObject();
                             tls.Remove("allowInsecure");
-                            tls["pinnedPeerCertSha256"] = new JArray();
+                            tls.Remove("pinnedPeerCertSha256");
+                            tls["insecure"] = true;
                             if (tls["serverName"] == null)
                                 tls["serverName"] = _profile.Sni ?? _profile.ServerAddress;
                             ss["tlsSettings"] = tls;
@@ -222,7 +223,7 @@ namespace KighmuVpnWindows.Engines
                             ss["tlsSettings"] = new JObject
                             {
                                 ["serverName"]          = _profile.Sni ?? _profile.ServerAddress,
-                                ["pinnedPeerCertSha256"] = new JArray(),
+                                ["insecure"] = true,
                                 ["fingerprint"]         = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint
                             };
                             ob["streamSettings"] = ss;
@@ -269,7 +270,7 @@ namespace KighmuVpnWindows.Engines
                 // TLS standard
                 string sni      = string.IsNullOrWhiteSpace(_profile.Sni) ? _profile.ServerAddress : _profile.Sni;
                 string fp       = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint;
-                return $"\"security\":\"tls\",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"pinnedPeerCertSha256\":[],\"fingerprint\":\"{fp}\"}}"; 
+                return $"\"security\":\"tls\",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"insecure\":true,\"fingerprint\":\"{fp}\"}}"; 
             }
         }
 
