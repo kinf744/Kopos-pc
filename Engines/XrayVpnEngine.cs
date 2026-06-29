@@ -263,11 +263,10 @@ namespace KighmuVpnWindows.Engines
             }
             else
             {
-                // TLS standard
+                // TLS standard (sans fingerprint — Xray 26+ ne le supporte plus dans tlsSettings)
                 string sni      = string.IsNullOrWhiteSpace(_profile.Sni) ? _profile.ServerAddress : _profile.Sni;
                 string insecure = _profile.AllowInsecure ? "true" : "false";
-                string fp       = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint;
-                return $"\"security\":\"tls\",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"allowInsecure\":{insecure},\"fingerprint\":\"{fp}\"}}"; 
+                return $"\"security\":\"tls\",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"allowInsecure\":{insecure}}}"; 
             }
         }
 

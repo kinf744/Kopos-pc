@@ -169,7 +169,7 @@ namespace KighmuVpnWindows.Profiles
             if (security == "tls")
             {
                 string ai = allowInsecure ? "true" : "false";
-                tlsPart = $",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"fingerprint\":\"{fp}\",\"allowInsecure\":{ai}}}";
+                tlsPart = $",\"tlsSettings\":{{\"serverName\":\"{sni}\",\"allowInsecure\":{ai}}}";
             }
             else if (security == "reality")
                 tlsPart = $",\"realitySettings\":{{\"serverName\":\"{sni}\",\"fingerprint\":\"{fp}\",\"publicKey\":\"{pbk}\",\"shortId\":\"{sid}\"}}";
