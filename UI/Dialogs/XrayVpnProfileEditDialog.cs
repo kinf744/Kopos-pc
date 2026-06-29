@@ -247,6 +247,10 @@ namespace KighmuVpnWindows.UI.Dialogs
                 window.Height = 480;
             };
 
+            // ── OPTIONS TLS ─────────────────────────────────────────────────────
+            Label("OPTIONS TLS");
+            var cbAllowInsecure = CheckField("Ignorer erreurs certificat TLS (allowInsecure)", p.AllowInsecure);
+
             // ── Boutons ───────────────────────────────────────────────────────
             var buttonsPanel = new StackPanel
             {
@@ -283,7 +287,7 @@ namespace KighmuVpnWindows.UI.Dialogs
                     Tls           = tmp.Tls,
                     Sni           = tmp.Sni,
                     Fingerprint   = string.IsNullOrWhiteSpace(tmp.Fingerprint) ? "chrome" : tmp.Fingerprint,
-                    AllowInsecure = tmp.AllowInsecure,
+                    AllowInsecure = cbAllowInsecure.IsChecked == true || tmp.AllowInsecure,
                     PublicKey     = tmp.PublicKey,
                     ShortId       = tmp.ShortId,
                     Flow          = tmp.Flow,
