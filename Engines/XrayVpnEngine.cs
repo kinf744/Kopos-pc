@@ -364,7 +364,8 @@ namespace KighmuVpnWindows.Engines
 
         public void StartTun2SocksOnPort(string tunAdapterName, int targetPort)
         {
-            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG);
+            // UDP desactive : Xray SOCKS5 ne supporte pas UDP ASSOCIATE (commande 5)
+            _tun2socksProcess = Tun2SocksHelper.Start(tunAdapterName, targetPort, TAG, udpEnabled: false);
         }
 
         public async Task Stop()
