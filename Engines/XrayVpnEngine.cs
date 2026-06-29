@@ -24,6 +24,15 @@ namespace KighmuVpnWindows.Engines
         public string? ServerIp => _resolvedServerIp;
 
         private const string TAG = "XrayVpnEngine";
+        private static readonly string _xrayLogFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            "kighmuxray.txt");
+        private static void XrayLog(string msg)
+        {
+            string line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
+            KighmuLogger.Info(TAG, msg);
+            try { File.AppendAllText(_xrayLogFile, line + "\n"); } catch { }
+        }
 
         private readonly XrayVpnProfile _profile;
         private readonly int            _instanceId;
@@ -76,6 +85,8 @@ namespace KighmuVpnWindows.Engines
         public async Task<int> Start()
         {
             _running = true;
+            try { File.WriteAllText(_xrayLogFile, $"=== KIGHMU XRAY LOG {DateTime.Now} ===\n"); } catch { }
+            XrayLog("Demarrage XrayVpnEngine...");
             SlowDnsLogger.Begin("XrayVpnEngine", "START Xray VPN tunnel");
             KighmuLogger.Info(TAG, "Demarrage XrayVpnEngine...");
 
@@ -233,6 +244,7 @@ namespace KighmuVpnWindows.Engines
             string dir  = AppPaths.ConfigPath;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, fileName);
+            XrayLog($"=== JSON CONFIG XRAY ===\n{jsonConfig}\n=== FIN JSON ===");
             File.WriteAllText(path, jsonConfig);
             SlowDnsLogger.Block("XrayVpnEngine", "Config JSON", jsonConfig);
             return path;
@@ -331,6 +343,7 @@ namespace KighmuVpnWindows.Engines
         private void ProcessXrayLine(string? line)
         {
             if (string.IsNullOrWhiteSpace(line) || line.Length > 500) return;
+            XrayLog($"XRAY: {line}");
             SlowDnsLogger.Raw("XrayVpnEngine", line);
             string lower = line.ToLower();
             if (lower.Contains("started") && lower.Contains("xray"))
