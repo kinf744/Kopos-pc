@@ -66,7 +66,7 @@ namespace KighmuVpnWindows.Profiles
     ""streamSettings"": { ""network"": ""ws"", ""security"": ""tls"",
       ""wsSettings"": { ""path"": ""/"" },
       ""tlsSettings"": { ""serverName"": ""example.com"" } }
-  }, { ""protocol"": ""freedom"", ""tag"": ""direct"" }],
+  }, { ""protocol"": ""freedom"", ""tag"": ""direct-out"" }],
   ""routing"": { ""rules"": [] }
 }";
 
@@ -210,10 +210,10 @@ namespace KighmuVpnWindows.Profiles
                 "{\"log\":{\"loglevel\":\"warning\"},",
                 "\"inbounds\":[{\"port\":10808,\"protocol\":\"socks\",\"settings\":{\"udp\":true}}],",
                 "\"outbounds\":[",
-                "{\"protocol\":\"vmess\",\"settings\":{\"vnext\":[{\"address\":\"", host, "\",\"port\":", port.ToString(),
+                "{\"protocol\":\"vmess\",\"tag\":\"proxy\",\"settings\":{\"vnext\":[{\"address\":\"", host, "\",\"port\":", port.ToString(),
                 ",\"users\":[{\"id\":\"", uuid, "\",\"alterId\":", alterId.ToString(), ",\"security\":\"auto\"}]}]},",
                 "\"streamSettings\":", stream, ",\"mux\":{\"enabled\":false}},",
-                "{\"protocol\":\"freedom\",\"tag\":\"direct\"}],",
+                "{\"protocol\":\"freedom\",\"tag\":\"direct-out\"}],",
                 "\"routing\":{\"rules\":[]}}");
         }
 
@@ -226,19 +226,19 @@ namespace KighmuVpnWindows.Profiles
             string outbound;
             if (proto == "trojan")
                 outbound = string.Concat(
-                    "{\"protocol\":\"trojan\",\"settings\":{\"servers\":[{\"address\":\"", host,
+                    "{\"protocol\":\"trojan\",\"tag\":\"proxy\",\"settings\":{\"servers\":[{\"address\":\"", host,
                     "\",\"port\":", port.ToString(), ",\"password\":\"", uuid, "\"}]},",
                     "\"streamSettings\":", stream, ",\"mux\":{\"enabled\":false}}");
             else
                 outbound = string.Concat(
-                    "{\"protocol\":\"vless\",\"settings\":{\"vnext\":[{\"address\":\"", host,
+                    "{\"protocol\":\"vless\",\"tag\":\"proxy\",\"settings\":{\"vnext\":[{\"address\":\"", host,
                     "\",\"port\":", port.ToString(), ",\"users\":[{\"id\":\"", uuid,
                     "\",\"encryption\":\"none\"", flowPart, "}]}]},",
                     "\"streamSettings\":", stream, ",\"mux\":{\"enabled\":false}}");
             return string.Concat(
                 "{\"log\":{\"loglevel\":\"warning\"},",
                 "\"inbounds\":[{\"port\":10808,\"protocol\":\"socks\",\"settings\":{\"udp\":true}}],",
-                "\"outbounds\":[", outbound, ",{\"protocol\":\"freedom\",\"tag\":\"direct\"}],",
+                "\"outbounds\":[", outbound, ",{\"protocol\":\"freedom\",\"tag\":\"direct-out\"}],",
                 "\"routing\":{\"rules\":[]}}");
         }
     }

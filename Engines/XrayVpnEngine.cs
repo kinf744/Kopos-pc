@@ -194,8 +194,17 @@ namespace KighmuVpnWindows.Engines
                 var outbounds = obj["outbounds"] as JArray;
                 if (outbounds != null)
                 {
+                    int tagCounter = 0;
                     foreach (var ob in outbounds)
                     {
+                        // Xray 26+ : tous les outbounds doivent avoir un tag
+                        string? existingTag = ob["tag"]?.ToString();
+                        if (string.IsNullOrEmpty(existingTag) || existingTag == "direct")
+                        {
+                            ob["tag"] = tagCounter == 0 ? "proxy" : "direct-out";
+                        }
+                        tagCounter++;
+
                         var settings = ob["settings"] as JObject;
                         if (settings != null)
                         {
@@ -212,7 +221,7 @@ namespace KighmuVpnWindows.Engines
                                         s["address"] = _resolvedServerIp;
                             }
                         }
-                        // Forcer allowInsecure:true dans tlsSettings (certificats auto-signés, CDN, etc.)
+                        // Forcer allowInsecure:true dans tlsSettings
                         var ss = ob["streamSettings"] as JObject;
                         var tls = ss?["tlsSettings"] as JObject;
                         if (tls != null)
@@ -308,12 +317,12 @@ namespace KighmuVpnWindows.Engines
 
             string outbound = proto switch
             {
-                "vmess"  => $"{{\"protocol\":\"vmess\",\"settings\":{{\"vnext\":[{{\"address\":\"{host}\",\"port\":{port},\"users\":[{{\"id\":\"{uuid}\",\"alterId\":0,\"security\":\"auto\"}}]}}]}},\"streamSettings\":{stream}}}",
-                "trojan" => $"{{\"protocol\":\"trojan\",\"settings\":{{\"servers\":[{{\"address\":\"{host}\",\"port\":{port},\"password\":\"{uuid}\"}}]}},\"streamSettings\":{stream}}}",
-                _        => $"{{\"protocol\":\"vless\",\"settings\":{{\"vnext\":[{{\"address\":\"{host}\",\"port\":{port},\"users\":[{{\"id\":\"{uuid}\",\"encryption\":\"none\"}}]}}]}},\"streamSettings\":{stream}}}"
+                "vmess"  => $"{{\"protocol\":\"vmess\",\"tag\":\"proxy\",\"settings\":{{\"vnext\":[{{\"address\":\"{host}\",\"port\":{port},\"users\":[{{\"id\":\"{uuid}\",\"alterId\":0,\"security\":\"auto\"}}]}}]}},\"streamSettings\":{stream}}}",
+                "trojan" => $"{{\"protocol\":\"trojan\",\"tag\":\"proxy\",\"settings\":{{\"servers\":[{{\"address\":\"{host}\",\"port\":{port},\"password\":\"{uuid}\"}}]}},\"streamSettings\":{stream}}}",
+                _        => $"{{\"protocol\":\"vless\",\"tag\":\"proxy\",\"settings\":{{\"vnext\":[{{\"address\":\"{host}\",\"port\":{port},\"users\":[{{\"id\":\"{uuid}\",\"encryption\":\"none\"}}]}}]}},\"streamSettings\":{stream}}}"
             };
 
-            return $"{{\"log\":{{\"loglevel\":\"warning\"}},\"inbounds\":[{{\"port\":{socksPort},\"listen\":\"127.0.0.1\",\"protocol\":\"socks\",\"settings\":{{\"udp\":true}}}}],\"outbounds\":[{outbound},{{\"protocol\":\"freedom\",\"tag\":\"direct\"}}],\"routing\":{{\"rules\":[]}}}}";
+            return $"{{\"log\":{{\"loglevel\":\"warning\"}},\"inbounds\":[{{\"port\":{socksPort},\"listen\":\"127.0.0.1\",\"protocol\":\"socks\",\"settings\":{{\"udp\":true}}}}],\"outbounds\":[{outbound},{{\"protocol\":\"freedom\",\"tag\":\"direct-out\"}}],\"routing\":{{\"rules\":[]}}}}";
         }
 
         private void StartXrayProcess(string binary, string configPath)

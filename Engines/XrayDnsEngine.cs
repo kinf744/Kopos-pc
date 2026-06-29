@@ -292,11 +292,18 @@ namespace KighmuVpnWindows.Engines
                 var outbounds = obj["outbounds"] as JArray;
                 if (outbounds != null)
                 {
+                    // Xray 26+ : tous les outbounds doivent avoir un tag
+                    int tagCounter = 0;
                     foreach (var ob in outbounds)
                     {
+                        string? existingTag = ob["tag"]?.ToString();
+                        if (string.IsNullOrEmpty(existingTag))
+                            ob["tag"] = tagCounter == 0 ? "proxy" : "direct-out";
+                        tagCounter++;
+
                         string proto = ob["protocol"]?.ToString() ?? "";
                         string tag   = ob["tag"]?.ToString()      ?? "";
-                        if (proto == "freedom" || proto == "blackhole" || proto == "socks" || tag == "direct")
+                        if (proto == "freedom" || proto == "blackhole" || proto == "socks" || tag == "direct" || tag == "direct-out")
                             continue;
 
                         var settings = ob["settings"] as JObject;
@@ -374,12 +381,12 @@ namespace KighmuVpnWindows.Engines
 
             string outbound = proto switch
             {
-                "vmess"  => $"{{\"protocol\":\"vmess\",\"settings\":{{\"vnext\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"users\":[{{\"id\":\"{uuid}\",\"alterId\":0,\"security\":\"auto\"}}]}}]}},\"streamSettings\":{stream}}}",
-                "trojan" => $"{{\"protocol\":\"trojan\",\"settings\":{{\"servers\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"password\":\"{uuid}\"}}]}},\"streamSettings\":{stream}}}",
-                _        => $"{{\"protocol\":\"vless\",\"settings\":{{\"vnext\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"users\":[{{\"id\":\"{uuid}\",\"encryption\":\"none\"}}]}}]}},\"streamSettings\":{stream}}}"
+                "vmess"  => $"{{\"protocol\":\"vmess\",\"tag\":\"proxy\",\"settings\":{{\"vnext\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"users\":[{{\"id\":\"{uuid}\",\"alterId\":0,\"security\":\"auto\"}}]}}]}},\"streamSettings\":{stream}}}",
+                "trojan" => $"{{\"protocol\":\"trojan\",\"tag\":\"proxy\",\"settings\":{{\"servers\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"password\":\"{uuid}\"}}]}},\"streamSettings\":{stream}}}",
+                _        => $"{{\"protocol\":\"vless\",\"tag\":\"proxy\",\"settings\":{{\"vnext\":[{{\"address\":\"127.0.0.1\",\"port\":{dnsttPort},\"users\":[{{\"id\":\"{uuid}\",\"encryption\":\"none\"}}]}}]}},\"streamSettings\":{stream}}}"
             };
 
-            return $"{{\"log\":{{\"loglevel\":\"warning\"}},\"inbounds\":[{{\"port\":{socksPort},\"listen\":\"127.0.0.1\",\"protocol\":\"socks\",\"settings\":{{\"udp\":true}}}}],\"outbounds\":[{outbound},{{\"protocol\":\"freedom\",\"tag\":\"direct\"}}],\"routing\":{{\"rules\":[]}}}}";
+            return $"{{\"log\":{{\"loglevel\":\"warning\"}},\"inbounds\":[{{\"port\":{socksPort},\"listen\":\"127.0.0.1\",\"protocol\":\"socks\",\"settings\":{{\"udp\":true}}}}],\"outbounds\":[{outbound},{{\"protocol\":\"freedom\",\"tag\":\"direct-out\"}}],\"routing\":{{\"rules\":[]}}}}";
         }
 
         private void StartXrayProcess(string binary, string configPath)
