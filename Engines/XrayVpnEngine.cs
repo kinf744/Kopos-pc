@@ -192,13 +192,27 @@ namespace KighmuVpnWindows.Engines
                 {
                     foreach (var ob in outbounds)
                     {
-                        var ss  = ob["streamSettings"] as JObject;
-                        var tls = ss?["tlsSettings"] as JObject;
-                        if (tls != null)
+                        var ss = ob["streamSettings"] as JObject;
+                        if (ss == null) continue;
+                        string security = ss["security"]?.ToString() ?? "none";
+                        if (security == "tls")
                         {
-                            if (_profile.AllowInsecure)
-                                tls["allowInsecure"] = true;
-                            ss!["tlsSettings"] = tls;
+                            var tls = ss["tlsSettings"] as JObject ?? new JObject();
+                            tls["allowInsecure"] = true;
+                            if (tls["serverName"] == null)
+                                tls["serverName"] = _profile.Sni ?? _profile.ServerAddress;
+                            ss["tlsSettings"] = tls;
+                            ob["streamSettings"] = ss;
+                        }
+                        else if (security == "none" && _profile.Tls)
+                        {
+                            ss["security"] = "tls";
+                            ss["tlsSettings"] = new JObject
+                            {
+                                ["serverName"]    = _profile.Sni ?? _profile.ServerAddress,
+                                ["allowInsecure"] = true,
+                                ["fingerprint"]   = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint
+                            };
                             ob["streamSettings"] = ss;
                         }
                     }
