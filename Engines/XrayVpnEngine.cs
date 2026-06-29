@@ -212,8 +212,8 @@ namespace KighmuVpnWindows.Engines
                             tls.Remove("allowInsecure");
                             tls.Remove("pinnedPeerCertSha256");
                             tls["disableSystemRoot"] = true;
-                            if (tls["serverName"] == null)
-                                tls["serverName"] = _profile.Sni ?? _profile.ServerAddress;
+                            // Ne pas ecraser serverName s'il existe deja dans le JSON
+                            // (le JSON du lien contient deja le bon serverName)
                             ss["tlsSettings"] = tls;
                             ob["streamSettings"] = ss;
                         }
@@ -222,9 +222,9 @@ namespace KighmuVpnWindows.Engines
                             ss["security"] = "tls";
                             ss["tlsSettings"] = new JObject
                             {
-                                ["serverName"]          = _profile.Sni ?? _profile.ServerAddress,
+                                ["serverName"]    = _profile.Sni ?? _profile.ServerAddress,
                                 ["disableSystemRoot"] = true,
-                                ["fingerprint"]         = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint
+                                ["fingerprint"]   = string.IsNullOrWhiteSpace(_profile.Fingerprint) ? "chrome" : _profile.Fingerprint
                             };
                             ob["streamSettings"] = ss;
                         }
