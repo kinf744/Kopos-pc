@@ -205,22 +205,6 @@ namespace KighmuVpnWindows.Engines
                         }
                         tagCounter++;
 
-                        var settings = ob["settings"] as JObject;
-                        if (settings != null)
-                        {
-                            // Remplacer le nom de domaine par l'IP résolue
-                            if (_resolvedServerIp != null && _resolvedServerIp != _profile.ServerAddress)
-                            {
-                                var vnext = settings["vnext"] as JArray;
-                                if (vnext != null)
-                                    foreach (var v in vnext)
-                                        v["address"] = _resolvedServerIp;
-                                var servers = settings["servers"] as JArray;
-                                if (servers != null)
-                                    foreach (var s in servers)
-                                        s["address"] = _resolvedServerIp;
-                            }
-                        }
                         // Forcer allowInsecure:true dans tlsSettings
                         var ss = ob["streamSettings"] as JObject;
                         var tls = ss?["tlsSettings"] as JObject;
@@ -228,6 +212,32 @@ namespace KighmuVpnWindows.Engines
                             tls["allowInsecure"] = true;
                     }
                     obj["outbounds"] = outbounds;
+                }
+
+                // DNS hosts : résoudre le domaine serveur en IP localement
+                // pour éviter le deadlock DNS quand le tunnel change les DNS système
+                if (_resolvedServerIp != null && _resolvedServerIp != _profile.ServerAddress)
+                {
+                    var dns = obj["dns"] as JObject;
+                    if (dns == null)
+                    {
+                        dns = new JObject();
+                        obj["dns"] = dns;
+                    }
+                    var hosts  = dns["hosts"] as JObject;
+                    if (hosts == null)
+                    {
+                        hosts = new JObject();
+                        dns["hosts"] = hosts;
+                    }
+                    hosts[_profile.ServerAddress] = _resolvedServerIp;
+                    // Ajouter un serveur DNS de fallback
+                    var servers = dns["servers"] as JArray;
+                    if (servers == null)
+                    {
+                        servers = new JArray("1.1.1.1", "8.8.8.8");
+                        dns["servers"] = servers;
+                    }
                 }
 
                 jsonConfig = obj.ToString(Formatting.Indented);
@@ -311,7 +321,7 @@ namespace KighmuVpnWindows.Engines
         {
             string proto  = _profile.Protocol;
             string uuid   = _profile.Uuid;
-            string host   = _resolvedServerIp ?? _profile.ServerAddress;
+            string host   = _profile.ServerAddress;
             int    port   = _profile.ServerPort;
             string stream = BuildStreamSettings(_profile.Transport);
 
